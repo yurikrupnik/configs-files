@@ -1,0 +1,61 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetpack-io/devbox/0.10.1/.schema/devbox.schema.json",
+  "packages": [
+    //    "gum@0.13",
+    "git",
+    //    "yq-go@0.13",
+    //    "awscli2@0.13",
+    //    "eksctl@0.13",
+    "azure-cli",
+    //  /  "nerdctl",
+    //    "kaniko",
+    "kind",
+    "gh",
+    //    "rustup@1.26",
+    "kubectl",
+    "bat",
+    "timoni",
+    "upbound",
+    "argo",
+    "argocd"
+    //    "argo-cd",
+    //    "rustup-toolchain-install-master@1.7",
+    //    "mongo@0.24",
+    //    "dagger@0.10.2",
+    //    "yq-go@4.41.1",
+    //    "go-task@3.35",
+    //    //    "gum@0.24",
+    //    "kubernetes-helm@3.14",
+    //    "kuttl@0.15",
+    //    //    "mongodb@6.0",
+    //    "google-cloud-sdk",
+    //    //    "kaniko@1.21",
+    //    "tilt",
+    //    "podman"
+  ],
+  "shell": {
+    "init_hook": [
+      "uname -a"
+    ],
+    "scripts": {
+      "cargo-custom-command": [
+        "echo todo"
+      ],
+      "cluster-create": [
+        "task cluster-create"
+      ],
+      "cluster-destroy": [
+        "task cluster-destroy"
+      ],
+      "package-publish": [
+        "task package-publish"
+      ],
+      "test": [
+        "task test"
+      ],
+      "test-watch": [
+        "task test-watch"
+      ]
+    }
+  }
+}
