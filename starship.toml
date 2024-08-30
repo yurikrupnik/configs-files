@@ -44,10 +44,10 @@ commit_hash_length = 6
 disabled = false
 
 [git_status]
-conflicted = '🏳 '
-ahead = '🏎💨 '
-behind = '😰 '
-diverged = '😵 '
+conflicted = '🏳'
+ahead = '🏎💨'
+behind = '😰'
+diverged = '😵'
 up_to_date = ''
 untracked = '🤷'
 stashed = ''
