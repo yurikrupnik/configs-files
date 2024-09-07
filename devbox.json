@@ -21,7 +21,6 @@
     "awscli",
     "google-cloud-sdk",
     "zed",
-//    "firefox",
     "timoni",
     "helm",
     "cue",
