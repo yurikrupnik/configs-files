@@ -1,9 +1,124 @@
 {
   "lockfile_version": "1",
   "packages": {
-    "postgresql": {
-      "plugin_version": "0.0.2",
-      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#postgresql",
+    "bat": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#bat",
+      "source": "nixpkg"
+    },
+    "bun": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#bun",
+      "source": "nixpkg"
+    },
+    "cue": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#cue",
+      "source": "nixpkg"
+    },
+    "firefox": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#firefox",
+      "source": "nixpkg"
+    },
+    "gh": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#gh",
+      "source": "nixpkg"
+    },
+    "go-task": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#go-task",
+      "source": "nixpkg"
+    },
+    "google-cloud-sdk": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#google-cloud-sdk",
+      "source": "nixpkg"
+    },
+    "gum": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#gum",
+      "source": "nixpkg"
+    },
+    "helm": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#helm",
+      "source": "nixpkg"
+    },
+    "just": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#just",
+      "source": "nixpkg"
+    },
+    "k9s": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#k9s",
+      "source": "nixpkg"
+    },
+    "kcl": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#kcl",
+      "source": "nixpkg"
+    },
+    "kind": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#kind",
+      "source": "nixpkg"
+    },
+    "kube-linter": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#kube-linter",
+      "source": "nixpkg"
+    },
+    "kubectl": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#kubectl",
+      "source": "nixpkg"
+    },
+    "kubectx": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#kubectx",
+      "source": "nixpkg"
+    },
+    "kubescape": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#kubescape",
+      "source": "nixpkg"
+    },
+    "minikube": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#minikube",
+      "source": "nixpkg"
+    },
+    "node": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#node",
+      "source": "nixpkg"
+    },
+    "popeye": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#popeye",
+      "source": "nixpkg"
+    },
+    "postman": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#postman",
+      "source": "nixpkg"
+    },
+    "pulumi": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#pulumi",
+      "source": "nixpkg"
+    },
+    "raycast": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#raycast",
+      "source": "nixpkg"
+    },
+    "starship": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#starship",
+      "source": "nixpkg"
+    },
+    "stow": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#stow",
+      "source": "nixpkg"
+    },
+    "teller": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#teller",
+      "source": "nixpkg"
+    },
+    "tilt": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#tilt",
+      "source": "nixpkg"
+    },
+    "timoni": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#timoni",
+      "source": "nixpkg"
+    },
+    "warp": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#warp",
+      "source": "nixpkg"
+    },
+    "zed": {
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#zed",
       "source": "nixpkg"
     }
   }

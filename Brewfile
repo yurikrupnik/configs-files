@@ -10,7 +10,7 @@ brew "git"
 # UNIX shell (command interpreter)
 brew "starship"
 brew "zsh"
-cask "alfred"
+cask "raycast"
 cask "dropbox"
 cask "google-chrome"
 cask "visual-studio-code"
