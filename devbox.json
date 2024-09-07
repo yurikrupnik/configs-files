@@ -1,85 +1,79 @@
 {
-    "$schema": "https://raw.githubusercontent.com/jetpack-io/devbox/0.10.1/.schema/devbox.schema.json",
-    "packages": [
-      "go",
-      "go-task",
-      "starship",
-      "tilt",
-      "nodejs_20",
-//      "exa",
-//      "warp-terminal",
-      "bat",
-      "bun",
-      "kubectl",
-      "kind",
-      "minikube",
-      "helm",
-      "timoni",
-//      "postgresql",
-      "helm",
-//      "vcluster",
-//      "velero",
-      "minikube",
-      "node",
-      "pulumi",
-      "kubectx",
-//      "prettierd",
-//      "linkerd",
-//      "istioctl",
-//      "kubeseal",
-//      "argo",
-//      "argocd",
-//      "fluxcd",
-//      "fluxctl",
-//      "zed"
-      "k9s"
+  "$schema": "https://raw.githubusercontent.com/jetpack-io/devbox/0.10.1/.schema/devbox.schema.json",
+  "packages": [
+    "teller",
+    "gum",
+    "stow",
+    "kubescape",
+    "just",
+    "popeye",
+    "kube-linter",
+    "gh",
+    "go-task",
+    "starship",
+    "tilt",
+    "bat",
+    "bun",
+    "kubectl",
+    "kind",
+    "minikube",
+    "lazygit",
+    "awscli",
+    "google-cloud-sdk",
+    "zed",
+//    "firefox",
+//    "postman",
+//    "warp",
+//    "raycast",
+    "timoni",
+    "helm",
+    "cue",
+    "kcl",
+    "minikube",
+    "node",
+    "pulumi",
+    "kubectx",
+    "k9s"
+  ],
+  "shellenv": {
+    "init_hook": [
+      "echo 'Welcome to shellenv devbox!' > /dev/null",
+      "bat /dev/null"
     ],
-    "shellenv": {
-      "init_hook": [
-        "echo 'Welcome to shellenv devbox!' > /dev/null",
-        "bat /dev/null"
+    "env": {
+      "PATH":           "$HOME/.local/bin:$PATH",
+      "GOPATH":         "$HOME/go",
+      "GOBIN":          "$HOME/go/bin",
+      "KUBECONFIG":     "$HOME/.kube/config",
+      "KUBE_EDITOR":    "zed",
+      "EDITOR":         "zed",
+      "VISUAL":         "zed",
+      "PAGER":          "less",
+      "LESS":           "-R",
+      "GCLOUD_PROJECT": "shared-404221",
+      "GCLOUD_REGION":  "EU"
+    }
+  },
+  "shell": {
+    "init_hook": ["echo 'Welcome to devbox!' > /dev/null"],
+    "scripts": {
+      "test": ["echo \"Error: no test specified\" && exit 1"],
+      "install-hook-bash": [
+        "echo adding 'devbox global shellenv' to ~/.bashrc",
+        "grep -qF 'devbox global shellenv' ~/.bashrc || echo 'eval \"$(devbox global shellenv --init-hook)\"' >> ~/.bashrc",
+        "tail -n 1 ~/.bashrc"
       ],
-      "env": {
-        "PATH": "$HOME/.local/bin:$PATH",
-        "GOPATH": "$HOME/go",
-        "GOBIN": "$HOME/go/bin",
-        "KUBECONFIG": "$HOME/.kube/config",
-        "KUBE_EDITOR": "zed",
-        "EDITOR": "zed",
-        "VISUAL": "zed",
-        "PAGER": "less",
-        "LESS": "-R",
-        "GCLOUD_PROJECT": "shared-404221",
-//        "GCLOUD_REGION": "us-central1"
-        "GCLOUD_REGION": "EU"
-//        "GCLOUD_REGION": "europe-west6"
-      }
-    },
-    "shell": {
-      "init_hook": [
-        "echo 'Welcome to devbox!' > /dev/null"
+      "install-hook-zsh": [
+        "echo adding 'devbox global shellenv' to ~/.zshrc",
+        "grep -qF 'devbox global shellenv' ~/.zshrc || echo 'eval \"$(devbox global shellenv --init-hook)\"' >> ~/.zshrc",
+        "tail -n 1 ~/.zshrc"
       ],
-      "scripts": {
-        "test": [
-          "echo \"Error: no test specified\" && exit 1"
-        ],
-        "install-hook-bash": [
-          "echo adding 'devbox global shellenv' to ~/.bashrc",
-          "grep -qF 'devbox global shellenv' ~/.bashrc || echo 'eval \"$(devbox global shellenv --init-hook)\"' >> ~/.bashrc",
-          "tail -n 1 ~/.bashrc"
-        ],
-        "install-hook-zsh": [
-          "echo adding 'devbox global shellenv' to ~/.zshrc",
-          "grep -qF 'devbox global shellenv' ~/.zshrc || echo 'eval \"$(devbox global shellenv --init-hook)\"' >> ~/.zshrc",
-          "tail -n 1 ~/.zshrc"
-        ],
-        "install-starship-prompt": [
-          "if [ ! -f $HOME/.config/starship.toml ]",
-          "then",
-          "curl -fsSL https://devbox.getfleek.dev/config/starship/starship.toml > $HOME/.config/starship.toml",
-          "fi"
-        ]
-      }
+      "install-starship-prompt": [
+        "if [ ! -f $HOME/.config/starship.toml ]",
+        "then",
+        "curl -fsSL https://devbox.getfleek.dev/config/starship/starship.toml > $HOME/.config/starship.toml",
+        "fi"
+      ]
     }
   }
-  
+}
