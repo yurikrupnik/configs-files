@@ -5,6 +5,8 @@
 
 brew bundle
 
+kubectl krew install kuttl
+
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 stow --dir=$HOME/.dotfiles --target=$HOME zsh
