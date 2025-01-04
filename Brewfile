@@ -1,17 +1,29 @@
-tap "homebrew/bundle"
-tap "homebrew/cask"
-tap "homebrew/core"
+#tap "homebrew/bundle"
+#tap "homebrew/cask"
+#tap "homebrew/core"
 # Clone of cat(1) with syntax highlighting and Git integration
 brew "bat"
-# Modern replacement for 'ls'
-brew "exa"
-# Distributed revision control system
-brew "git"
-# UNIX shell (command interpreter)
+brew "stow"
 brew "starship"
-brew "zsh"
+brew "kind"
+brew "node"
+brew "pnpm"
+brew "awscli"
+brew "helm"
+# brew "kcl"
+brew "minikube"
+brew "kubectx"
+brew "pulumi"
+brew "k9s"
+# cask "docker"
+brew "tilt"
+# Modern replacement for 'ls'
+#brew "exa"
+# Distributed revision control system
+#brew "git"
+# UNIX shell (command interpreter)
+#brew "zsh"
 cask "raycast"
-cask "dropbox"
-cask "google-chrome"
+# cask "google-chrome"
 cask "visual-studio-code"
 cask "warp"

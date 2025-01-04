@@ -3,6 +3,10 @@
 # install homebrew
 sh <(curl -L https://nixos.org/nix/install)
 
+brew bundle
+
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
 stow --dir=$HOME/.dotfiles --target=$HOME zsh
 
 curl -fsSL https://get.jetify.com/devbox | bash
