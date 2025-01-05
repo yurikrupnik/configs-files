@@ -14,7 +14,8 @@ eval "$(devbox global shellenv --init-hook)"
 eval "$(/opt/homebrew/bin/brew shellenv)"
 # Starship
 eval "$(starship init zsh)"
-# export STARSHIP_CONFIG=~/.config/starship/starship.toml
+export STARSHIP_CONFIG=~/.config/starship/starship.toml
+
 # Zoxide
 eval "$(zoxide init --cmd cd zsh)"
 
