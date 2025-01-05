@@ -20,6 +20,7 @@ go install github.com/mitranim/gow@latest
 brew tap fermyon/tap
 brew install fermyon/tap/spin
 # rust
+cargo install nu --locked
 #cargo install cargo-binstall
 #cargo binstall cargo-generate
 #cargo binstall wasm-pack
