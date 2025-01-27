@@ -15,7 +15,8 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 # Starship
 eval "$(starship init zsh)"
 export STARSHIP_CONFIG=~/.config/starship/starship.toml
-
+# krew for kubectl
+export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
 # Zoxide
 eval "$(zoxide init --cmd cd zsh)"
 
