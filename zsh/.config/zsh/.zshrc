@@ -15,8 +15,6 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 # Starship
 eval "$(starship init zsh)"
 export STARSHIP_CONFIG=~/.config/starship/starship.toml
-# krew for kubectl
-export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
 # Zoxide
 eval "$(zoxide init --cmd cd zsh)"
 
@@ -27,6 +25,7 @@ export LANG=en_US.UTF-8
 export PATH="$HOME/go/bin:$PATH"
 export PATH="/usr/local/bin:$PATH"
 export PATH="$HOME/.local/bin:$PATH"
+export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
 
 # Added by Toolbox App
 export PATH="$PATH:/Users/yurikrupnik/Library/Application Support/JetBrains/Toolbox/scripts"
