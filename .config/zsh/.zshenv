@@ -1,3 +1,3 @@
-ZDOTDIR=$HOME/.config/zsh
-
-. "$HOME/.cargo/env"
+# ZDOTDIR=$HOME/.config/zsh
+#
+# . "$HOME/.cargo/env"
