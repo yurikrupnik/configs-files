@@ -9,9 +9,15 @@ $git_commit\
 $gcloud\
 $aws\
 $azure\
+$nix_shell\
+$bun\
+$python\
+$rust\
+$lua\
 $fill\
 $cmd_duration $time\
 $kubernetes $namespace\
+$nix_shell\
 $line_break\
 $character
 """
@@ -72,10 +78,10 @@ format = 'via [$symbol$state](bold purple) '
 
 # Start of Disabled
 [aws]
-disabled = true
+disabled = false
 
 [azure]
-disabled = true
+disabled = false
 
 [gcloud]
 disabled = true
@@ -86,16 +92,16 @@ style = 'bold yellow'
 disabled = true
 
 [docker_context]
-disabled = true
+disabled = false
 
 [rust]
-disabled = true
+disabled = false
 
 [nodejs]
 disabled = true
 
 [bun]
-disabled = true
+disabled = false
 
 [golang]
 disabled = true
@@ -107,13 +113,13 @@ disabled = true
 disabled = true
 
 [lua]
-disabled = true
+disabled = false
 
 [zig]
-disabled = true
+disabled = false
 
 [python]
-disabled = true
+disabled = false
 # End of Disabled
 
 [localip] # disabled true by default - here for future network tests
