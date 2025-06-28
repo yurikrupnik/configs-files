@@ -11,33 +11,43 @@ ku() {
 }
 
 update() {
-#    brew update
-#    devbox version update
-#    devbox global update
-#
     brew bundle --file ~/configs-files/brew/Brewfile
     rustup update
-    nix-collect-garbage
 }
 
-stam() {
-  cd ~/projects/
+create-nx() {
+  cd ~/repos/protos
   npx create-nx-workspace --pm pnpm --preset=@monodon/rust
   pnpm exec nx generate @monodon/rust:library --name=s --directory=aris --no-interactive --dry-run
-  pnpm add -D @nxlv/python
-  uv init
+  bun nx generate @monodon/rust:binary --name=api --directory=zerg
+  bun add -D @nxlv/python
+  uv init --bare --python=3.13
+  bun nx generate @nxlv/python:uv-project --name=shared --projectType=library --directory=python --buildBundleLocalDependencies=false --buildLockedVersions=false --codeCoverage=false --codeCoverageHtmlReport=false --codeCoverageXmlReport=false --projectNameAndRootFormat=derived --unitTestHtmlReport=false --unitTestJUnitReport=false --no-interactive --dry-run
+  bun nx generate @nxlv/python:uv-project --name=job --directory=zerg --projectNameAndRootFormat=derived --no-interactive
 }
 
 nx-run() {
-  pnpm nx run-many -t $1 --parallel --max-parallel=10 --prod
+  bun nx run-many -t $1 --parallel --max-parallel=16
 }
 
 nx-runa() {
-  pnpm nx affected -t $1 --parallel --max-parallel=10 --prod
+  bun nx affected -t $1 --parallel --max-parallel=16
+}
+
+internal() {
+  istioctl install --set profile=demo -y
 }
 
 kc() {
-  kind create cluster
+  kind create cluster --config cluster.yaml
   sleep 20
   istioctl install --set profile=demo -y
+#  ds=${gcloud auth print-identity-token}
+#  dsa=${gcloud auth print-access-token}
+#  echo $dsa
+#  echo $ds
+}
+
+kd() {
+  kind delete cluster
 }

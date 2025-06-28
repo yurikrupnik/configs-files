@@ -1,0 +1,23 @@
+apiVersion: platform.example.com/v1alpha1
+kind: Cluster
+metadata:
+  name: local-dev
+  namespace: default
+spec:
+  name: local-dev
+  environment:
+    type: local
+    nodeCount: 1
+    nodeSize: small
+  applications:
+    crossplane:
+      enabled: true
+    argocd:
+      enabled: true
+    prometheus:
+      enabled: true
+    loki:
+      enabled: true
+  cost:
+    budget: 100
+    alertThreshold: 50

@@ -12,5 +12,7 @@ alias g=gcloud
 alias pu=pulumi
 alias p=pnpm
 alias c=cargo
+alias cli=claude
 alias cdoc=cargo doc
 alias cdoco=cargo doc --open
+alias b=bacon

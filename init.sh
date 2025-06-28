@@ -35,6 +35,7 @@ cp $HOME/.zshenv $HOME/.zshenv.bak
 rm $HOME/.zshenv
 stow zsh
 stow starship
+stow zed
 
 curl -fsSL https://get.jetify.com/devbox | bash
 
@@ -67,3 +68,4 @@ cargo binstall salvo-cli --no-confirm
 cargo binstall cargo-watch --no-confirm
 cargo binstall cargo-component --no-confirm
 cargo binstall cargo-make --no-confirm
+rustup target add wasm32-unknown-unknown

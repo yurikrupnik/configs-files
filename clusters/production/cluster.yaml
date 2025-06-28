@@ -1,0 +1,25 @@
+apiVersion: platform.example.com/v1alpha1
+kind: Cluster
+metadata:
+  name: production
+  namespace: default
+spec:
+  name: production
+  environment:
+    type: gke
+    region: us-central1
+    zone: us-central1-a
+    nodeCount: 5
+    nodeSize: large
+  applications:
+    crossplane:
+      enabled: true
+    argocd:
+      enabled: true
+    prometheus:
+      enabled: true
+    loki:
+      enabled: true
+  cost:
+    budget: 5000
+    alertThreshold: 90

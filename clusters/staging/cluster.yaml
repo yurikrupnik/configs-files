@@ -1,0 +1,24 @@
+apiVersion: platform.example.com/v1alpha1
+kind: Cluster
+metadata:
+  name: staging
+  namespace: default
+spec:
+  name: staging
+  environment:
+    type: aks
+    region: eastus
+    nodeCount: 3
+    nodeSize: medium
+  applications:
+    crossplane:
+      enabled: true
+    argocd:
+      enabled: true
+    prometheus:
+      enabled: true
+    loki:
+      enabled: true
+  cost:
+    budget: 1000
+    alertThreshold: 80

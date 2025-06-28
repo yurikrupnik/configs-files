@@ -1,0 +1,82 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: cluster-composition
+  labels:
+    provider: multi-cloud
+spec:
+  compositeTypeRef:
+    apiVersion: platform.example.com/v1alpha1
+    kind: XCluster
+  
+  resources:
+  - name: crossplane-release
+    base:
+      apiVersion: helm.crossplane.io/v1beta1
+      kind: Release
+      spec:
+        forProvider:
+          chart:
+            name: crossplane
+            repository: https://charts.crossplane.io/stable
+            version: "1.14.0"
+          namespace: crossplane-system
+          values:
+            args:
+              - --enable-composition-functions
+    patches:
+    - type: FromCompositeFieldPath
+      fromFieldPath: spec.namespace
+      toFieldPath: spec.forProvider.namespace
+
+  - name: argocd-release
+    base:
+      apiVersion: helm.crossplane.io/v1beta1
+      kind: Release
+      spec:
+        forProvider:
+          chart:
+            name: argo-cd
+            repository: https://argoproj.github.io/argo-helm
+            version: "5.46.0"
+          namespace: argocd
+          values:
+            server:
+              service:
+                type: LoadBalancer
+    patches:
+    - type: FromCompositeFieldPath
+      fromFieldPath: spec.applications.argocd.enabled
+      toFieldPath: metadata.annotations["crossplane.io/external-name"]
+
+  - name: prometheus-release
+    base:
+      apiVersion: helm.crossplane.io/v1beta1
+      kind: Release
+      spec:
+        forProvider:
+          chart:
+            name: kube-prometheus-stack
+            repository: https://prometheus-community.github.io/helm-charts
+            version: "51.0.0"
+          namespace: monitoring
+    patches:
+    - type: FromCompositeFieldPath
+      fromFieldPath: spec.applications.prometheus.enabled
+      toFieldPath: metadata.annotations["crossplane.io/external-name"]
+
+  - name: loki-release
+    base:
+      apiVersion: helm.crossplane.io/v1beta1
+      kind: Release
+      spec:
+        forProvider:
+          chart:
+            name: loki-stack
+            repository: https://grafana.github.io/helm-charts
+            version: "2.9.10"
+          namespace: monitoring
+    patches:
+    - type: FromCompositeFieldPath
+      fromFieldPath: spec.applications.loki.enabled
+      toFieldPath: metadata.annotations["crossplane.io/external-name"]

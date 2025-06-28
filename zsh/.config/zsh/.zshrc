@@ -1,14 +1,15 @@
 # see https://www.youtube.com/watch?v=KBh8lM3jeeE&t=36s for more details
 [[ -f $HOME/.config/zsh/aliases.zsh ]] && source $HOME/.config/zsh/aliases.zsh
 [[ -f $HOME/.config/zsh/functions.zsh ]] && source $HOME/.config/zsh/functions.zsh
+#[[ -f $HOME/.config/zsh/internal.zsh ]] && source $HOME/.config/zsh/internal.zsh
 # [[ -f $HOME/.config/zsh/exports.zsh ]] && source $HOME/.config/zsh/exports.zsh
 # [[ -f $HOME/.config/zsh/paths.zsh ]] && source $HOME/.config/zsh/paths.zsh
 # Nix!
 # export NIX_CONF_DIR=$HOME/.config/nix
 
 # Devbox
-DEVBOX_NO_PROMPT=true
-eval "$(devbox global shellenv --init-hook)"
+# DEVBOX_NO_PROMPT=true
+# eval "$(devbox global shellenv --init-hook)"
 # Brew
 # export PATH=/opt/homebrew/bin:$PATH
 eval "$(/opt/homebrew/bin/brew shellenv)"

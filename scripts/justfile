@@ -1,0 +1,384 @@
+#!/usr/bin/env just --justfile
+
+# Display available recipes
+default:
+    @just --list
+
+# =============================================================================
+# ENVIRONMENT SETUP
+# =============================================================================
+
+# Initialize development environment (full setup)
+init:
+    @echo "🚀 Initializing development environment..."
+    nu ../init.nu
+
+# Initialize with dry-run (preview changes)
+init-preview:
+    @echo "🔍 Previewing environment initialization..."
+    nu ../init.nu --dry-run
+
+# Initialize skipping certain components
+init-minimal:
+    @echo "⚡ Minimal environment setup..."
+    nu ../init.nu --skip-dev-tools --skip-config
+
+# Validate current environment setup
+validate:
+    @echo "✅ Validating environment..."
+    nu ../init.nu --validate-only
+
+# Generate detailed validation report
+validate-report:
+    @echo "📄 Generating validation report..."
+    nu -c "source nu-scripts/init/validation.nu; generate-validation-report validation-report.md"
+
+# Quick health check of critical tools
+health-check:
+    @echo "🏥 Running quick health check..."
+    nu -c "source nu-scripts/init/validation.nu; quick-health-check"
+
+# =============================================================================
+# CLUSTER MANAGEMENT
+# =============================================================================
+
+# Create local development cluster with full stack
+create-cluster name="dev":
+    @echo "🔧 Creating cluster: {{name}}"
+    nu -c "source nu-scripts/infrastructure/cluster.nu; cluster create {{name}} providers="aws,gcp,azure" --crossplane --loki"
+    kubectl cluster-info dump
+
+# Create minimal cluster (no additional components)
+create-cluster-minimal name="minimal":
+    @echo "🔧 Creating minimal cluster: {{name}}"
+    nu -c "source nu-scripts/infrastructure/cluster.nu; cluster create {{name}}"
+
+# Create cluster with specific providers
+create-cluster-with-providers name="prod" providers="aws,gcp":
+    @echo "🔧 Creating cluster {{name}} with providers: {{providers}}"
+    nu -c "source nu-scripts/infrastructure/cluster.nu; cluster create {{name}} --crossplane --providers [{{providers}}]"
+
+# Delete cluster
+delete-cluster name="dev":
+    @echo "🗑️  Deleting cluster: {{name}}"
+    nu -c "source nu-scripts/infrastructure/cluster.nu; cluster delete {{name}}"
+
+# Delete all clusters with cleanup
+delete-all-clusters:
+    @echo "🗑️  Deleting all clusters and cleanup..."
+    nu -c "source nu-scripts/infrastructure/cluster.nu; cluster delete --all --cleanup-crossplane"
+
+# List all clusters
+list-clusters:
+    @echo "📋 Listing clusters..."
+    nu -c "source nu-scripts/infrastructure/cluster.nu; cluster list"
+
+# Show cluster status
+cluster-status name="dev":
+    @echo "📊 Cluster status for: {{name}}"
+    nu -c "source nu-scripts/infrastructure/cluster.nu; cluster status {{name}}"
+
+# Load docker image into cluster
+load-image image name="dev":
+    @echo "📦 Loading image {{image}} into cluster {{name}}"
+    nu -c "source nu-scripts/infrastructure/cluster.nu; cluster load-image {{image}} {{name}}"
+
+# =============================================================================
+# CROSSPLANE MANAGEMENT
+# =============================================================================
+
+# Install Crossplane
+install-crossplane namespace="crossplane-system":
+    @echo "📦 Installing Crossplane in namespace: {{namespace}}"
+    nu -c "source nu-scripts/infrastructure/crossplane.nu; crossplane install --namespace {{namespace}}"
+
+# Install Crossplane with dependencies
+install-crossplane-full providers="aws,gcp,kubernetes":
+    @echo "📦 Installing Crossplane with providers: {{providers}}"
+    nu -c "source nu-scripts/infrastructure/crossplane.nu; crossplane install-deps --providers [{{providers}}]"
+
+# Show Crossplane status
+crossplane-status:
+    @echo "📊 Crossplane status..."
+    nu -c "source nu-scripts/infrastructure/crossplane.nu; crossplane status"
+
+# Uninstall Crossplane
+uninstall-crossplane:
+    @echo "🗑️  Uninstalling Crossplane..."
+    nu -c "source nu-scripts/infrastructure/crossplane.nu; crossplane uninstall --purge"
+
+# Search Crossplane packages
+search-packages query="":
+    @echo "🔍 Searching Crossplane packages{{if query != "" { " for: " + query } else { "" } }}..."
+    nu -c "source nu-scripts/infrastructure/crossplane.nu; crossplane packages{{if query != "" { " --search " + query } else { "" } }}"
+
+# =============================================================================
+# ARGOCD GITOPS
+# =============================================================================
+
+# Install ArgoCD
+install-argocd namespace="argocd":
+    @echo "🔄 Installing ArgoCD in namespace: {{namespace}}"
+    nu -c "source nu-scripts/gitops/argocd.nu; argocd install --namespace {{namespace}}"
+
+# Install ArgoCD in insecure mode (for development)
+install-argocd-dev:
+    @echo "🔄 Installing ArgoCD in development mode..."
+    nu -c "source nu-scripts/gitops/argocd.nu; argocd install --insecure"
+
+# Show ArgoCD status
+argocd-status:
+    @echo "📊 ArgoCD status..."
+    nu -c "source nu-scripts/gitops/argocd.nu; argocd status"
+
+# Open ArgoCD UI
+argocd-ui port="8080":
+    @echo "🌐 Opening ArgoCD UI on port {{port}}..."
+    nu -c "source nu-scripts/gitops/argocd.nu; argocd ui --port {{port}}"
+
+# Get ArgoCD admin password
+argocd-password:
+    @echo "🔑 Getting ArgoCD admin password..."
+    nu -c "source nu-scripts/gitops/argocd.nu; argocd password"
+
+# Create ArgoCD application
+create-app name repo_url path="manifests/":
+    @echo "📱 Creating ArgoCD application: {{name}}"
+    nu -c "source nu-scripts/gitops/argocd.nu; argocd app create {{name}} {{repo_url}} {{path}}"
+
+# List ArgoCD applications
+list-apps:
+    @echo "📋 Listing ArgoCD applications..."
+    nu -c "source nu-scripts/gitops/argocd.nu; argocd apps"
+
+# Uninstall ArgoCD
+uninstall-argocd:
+    @echo "🗑️  Uninstalling ArgoCD..."
+    nu -c "source nu-scripts/gitops/argocd.nu; argocd uninstall --purge"
+
+# =============================================================================
+# LOKI LOGGING
+# =============================================================================
+
+# Install Loki
+install-loki namespace="monitoring":
+    @echo "📊 Installing Loki in namespace: {{namespace}}"
+    nu -c "source nu-scripts/monitoring/loki.nu; loki install --namespace {{namespace}}"
+
+# Show Loki status
+loki-status:
+    @echo "📊 Loki status..."
+    nu -c "source nu-scripts/monitoring/loki.nu; loki status"
+
+# Port-forward Loki UI
+loki-ui port="3100":
+    @echo "🌐 Port-forwarding Loki on port {{port}}..."
+    nu -c "source nu-scripts/monitoring/loki.nu; loki port-forward --port {{port}}"
+
+# Query Loki logs
+loki-query query limit="100":
+    @echo "🔍 Querying Loki logs..."
+    nu -c "source nu-scripts/monitoring/loki.nu; loki query '{{query}}' --limit {{limit}}"
+
+# Install Promtail
+install-promtail:
+    @echo "📊 Installing Promtail..."
+    nu -c "source nu-scripts/monitoring/loki.nu; loki install-promtail"
+
+# Uninstall Loki
+uninstall-loki:
+    @echo "🗑️  Uninstalling Loki..."
+    nu -c "source nu-scripts/monitoring/loki.nu; loki uninstall --purge"
+
+# =============================================================================
+# KCL CONFIGURATION MANAGEMENT
+# =============================================================================
+
+# Install KCL
+install-kcl:
+    @echo "🔧 Installing KCL..."
+    nu -c "source nu-scripts/config-management/kcl.nu; kcl install"
+
+# Validate KCL configurations
+kcl-validate path=".":
+    @echo "✅ Validating KCL configurations in {{path}}..."
+    nu -c "source nu-scripts/config-management/kcl.nu; kcl validate --path {{path}}"
+
+# List KCL environments
+kcl-environments path=".":
+    @echo "📋 Listing KCL environments in {{path}}..."
+    nu -c "source nu-scripts/config-management/kcl.nu; kcl list-envs --path {{path}}"
+
+# Create cluster from KCL config
+kcl-create-cluster env="local":
+    @echo "🔧 Creating cluster from KCL config for environment: {{env}}"
+    nu -c "source nu-scripts/config-management/kcl.nu; kcl create-cluster {{env}}"
+
+# Preview cluster creation (dry-run)
+kcl-preview-cluster env="local":
+    @echo "🔍 Previewing cluster creation for environment: {{env}}"
+    nu -c "source nu-scripts/config-management/kcl.nu; kcl create-cluster {{env}} --dry-run"
+
+# Show infrastructure summary
+kcl-infrastructure-summary path=".":
+    @echo "📊 Infrastructure summary for {{path}}..."
+    nu -c "source nu-scripts/config-management/kcl.nu; kcl infrastructure-summary --path {{path}}"
+
+# Generate ArgoCD applications from KCL
+kcl-generate-argocd env="local" output="argocd-apps.yaml":
+    @echo "📱 Generating ArgoCD applications for {{env}}..."
+    nu -c "source nu-scripts/config-management/kcl.nu; kcl generate-argocd-apps {{env}} --output {{output}}"
+
+# =============================================================================
+# PACKAGE MANAGEMENT
+# =============================================================================
+
+# Update Homebrew and packages
+update-packages:
+    @echo "🔄 Updating packages..."
+    nu -c "source nu-scripts/init/package-management.nu; update-homebrew"
+
+# List installed packages
+list-packages:
+    @echo "📋 Listing installed packages..."
+    nu -c "source nu-scripts/init/package-management.nu; list-brew-packages"
+
+# Check for outdated packages
+check-outdated:
+    @echo "🔍 Checking for outdated packages..."
+    nu -c "source nu-scripts/init/package-management.nu; check-outdated-packages"
+
+# =============================================================================
+# DEVELOPMENT TOOLS
+# =============================================================================
+
+# Update Rust toolchain
+update-rust:
+    @echo "🦀 Updating Rust toolchain..."
+    nu -c "rustup update"
+
+# Install additional Rust tools
+install-rust-tools:
+    @echo "🔧 Installing Rust development tools..."
+    nu -c "source nu-scripts/init/development-tools.nu; install-rust-tools"
+
+# Verify development tools
+verify-tools:
+    @echo "✅ Verifying development tools..."
+    nu -c "source nu-scripts/init/development-tools.nu; verify-dev-tools"
+
+# Benchmark tools performance
+benchmark-tools:
+    @echo "⏱️  Benchmarking tools performance..."
+    nu -c "source nu-scripts/init/validation.nu; benchmark-tools"
+
+# =============================================================================
+# CONFIGURATION MANAGEMENT
+# =============================================================================
+
+# Setup configurations
+setup-config:
+    @echo "⚙️  Setting up configurations..."
+    nu -c "source nu-scripts/init/configuration.nu; setup-configurations"
+
+# Verify configurations
+verify-config:
+    @echo "✅ Verifying configurations..."
+    nu -c "source nu-scripts/init/configuration.nu; verify-configurations"
+
+# Reset configurations (careful!)
+reset-config:
+    @echo "⚠️  Resetting configurations..."
+    nu -c "source nu-scripts/init/configuration.nu; reset-configurations --confirm"
+
+# =============================================================================
+# TESTING AND INTEGRATION
+# =============================================================================
+
+# Run complete integration test
+test-integration:
+    @echo "🧪 Running complete integration test..."
+    nu test-complete-integration.nu
+
+# Run KCL integration test
+test-kcl:
+    @echo "🧪 Running KCL integration test..."
+    nu test-kcl-integration.nu
+
+# Demo KCL functionality
+demo-kcl:
+    @echo "🎯 Running KCL demo..."
+    nu demo-kcl.nu
+
+# =============================================================================
+# CLI DEVELOPMENT
+# =============================================================================
+
+# Build Rust CLI
+build-cli:
+    @echo "🔨 Building Rust CLI..."
+    cd ../cli && cargo build
+
+# Build Rust CLI (release)
+build-cli-release:
+    @echo "🔨 Building Rust CLI (release)..."
+    cd ../cli && cargo build --release
+
+# Run Rust CLI
+run-cli *args:
+    @echo "🚀 Running Rust CLI..."
+    cd ../cli && cargo run -- {{args}}
+
+# Test Rust CLI
+test-cli:
+    @echo "🧪 Testing Rust CLI..."
+    cd ../cli && cargo test
+
+# =============================================================================
+# UTILITY COMMANDS
+# =============================================================================
+
+# Start tracing
+trace-init:
+    @echo "🔍 Initializing tracing..."
+    nu -c "source nu-scripts/monitoring/tracer.nu; trace-init"
+
+# View trace logs
+trace-logs:
+    @echo "📊 Viewing trace logs..."
+    nu -c "source nu-scripts/monitoring/tracer.nu; trace-get"
+
+# Monitor system
+trace-monitor:
+    @echo "🔍 Starting trace monitor..."
+    nu -c "source nu-scripts/monitoring/tracer.nu; trace-monitor"
+
+# Clear trace logs
+trace-clear:
+    @echo "🗑️  Clearing trace logs..."
+    nu -c "source nu-scripts/monitoring/tracer.nu; trace-clear"
+
+# Show all available Nu commands
+nu-help:
+    @echo "📖 Available Nu commands..."
+    nu -c "source nu-scripts/core/main.nu; help commands"
+
+# Clean up temporary files
+clean:
+    @echo "🧹 Cleaning up..."
+    find . -name "*.tmp" -delete
+    find . -name ".DS_Store" -delete
+
+# =============================================================================
+# LEGACY COMPATIBILITY
+# =============================================================================
+
+# Legacy: create local cluster (maintained for compatibility)
+create-local:
+    @echo "⚠️  Using legacy command. Consider using 'just create-cluster' instead."
+    just create-cluster dev
+
+# Legacy: delete local cluster (maintained for compatibility)  
+delete-local:
+    @echo "⚠️  Using legacy command. Consider using 'just delete-cluster' instead."
+    just delete-cluster dev
