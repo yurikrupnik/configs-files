@@ -5,7 +5,7 @@ productionCluster: base.ClusterConfig = {
     name = "production"
     environment = {
         name = "production"
-        type = "gke"
+        $type = "gke"
         # or eks/aks
         region = "us-central1"
         zone = "us-central1-a"

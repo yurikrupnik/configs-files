@@ -11,7 +11,7 @@
 # DEVBOX_NO_PROMPT=true
 # eval "$(devbox global shellenv --init-hook)"
 # Brew
-# export PATH=/opt/homebrew/bin:$PATH
+export PATH=/opt/homebrew/bin:$PATH
 eval "$(/opt/homebrew/bin/brew shellenv)"
 # Starship
 eval "$(starship init zsh)"

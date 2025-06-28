@@ -6,7 +6,7 @@ stagingCluster: base.ClusterConfig = {
     environment = {
         name = "staging"
         # or eks/gke
-        type = "aks"
+        $type = "aks"
         region = "eastus"
         nodeCount = 3
         nodeSize = "medium"

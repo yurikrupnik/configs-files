@@ -5,7 +5,7 @@ localCluster: base.ClusterConfig = {
     name = "local-dev"
     environment = {
         name = "local"
-        type = "local"
+        $type = "local"
         nodeCount = 1
         nodeSize = "small"
     }

@@ -7,7 +7,7 @@ import environments.production
 # Test basic schema functionality
 test_environment = base.Environment {
     name = "test"
-    type = "local"
+    $type = "local"
     nodeCount = 2
     nodeSize = "small"
 }
@@ -51,9 +51,9 @@ validation_results = {
     test_environment_valid = test_environment.name == "test"
     test_application_valid = test_application.name == "test-app"
     # Environment tests
-    local_env_valid = environments.local.environment.type == "local"
-    staging_env_valid = environments.staging.environment.type == "aks"
-    production_env_valid = environments.production.environment.type == "gke"
+    local_env_valid = environments.local.environment.$type == "local"
+    staging_env_valid = environments.staging.environment.$type == "aks"
+    production_env_valid = environments.production.environment.$type == "gke"
     # Budget tests
     local_budget_valid = environments.local.cost.budget == 100
     staging_budget_valid = environments.staging.cost.budget == 1000
@@ -75,19 +75,19 @@ validation_results = {
     environments_summary = {
         local = {
             name = environments.local.name
-            type = environments.local.environment.type
+            $type = environments.local.environment.$type
             budget = environments.local.cost.budget
             apps = len(environments.local.applications)
         }
         staging = {
             name = environments.staging.name
-            type = environments.staging.environment.type
+            $type = environments.staging.environment.$type
             budget = environments.staging.cost.budget
             apps = len(environments.staging.applications)
         }
         production = {
             name = environments.production.name
-            type = environments.production.environment.type
+            $type = environments.production.environment.$type
             budget = environments.production.cost.budget
             apps = len(environments.production.applications)
         }

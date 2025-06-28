@@ -6,7 +6,7 @@ import k8s.api.apps.v1 as appsv1
 schema Environment:
     name: str
     # local, aks, eks, gke
-    type: str
+    $type: str
     region?: str
     zone?: str
     nodeCount: int = 3
@@ -57,7 +57,7 @@ defaultApps: [Application] = [
         values = {
             server = {
                 service = {
-                    type = "LoadBalancer"
+                    $type = "LoadBalancer"
                 }
             }
         }
