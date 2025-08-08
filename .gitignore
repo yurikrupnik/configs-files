@@ -14,3 +14,28 @@ Cargo.lock
 *.pdb
 
 .qodo
+tmp
+
+# Secrets and credentials
+**/*secret*
+**/*key*
+**/*token*
+**/*credential*
+**/*.key
+**/*.pem
+**/*.p12
+**/*.crt
+**/*.pfx
+**/*.json # Service account keys
+tmp/secrets/
+.env.local
+.env.*.local
+.env.production
+.env.staging
+.env.development
+**/service-account-*.json
+**/sa-*.json
+**/.gcloud/
+**/.aws/
+**/.kube/config
+**/.docker/config.json

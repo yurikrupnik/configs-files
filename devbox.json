@@ -52,7 +52,10 @@
     }
   },
   "shell": {
-    "init_hook": ["echo 'Welcome to devbox!' > /dev/null"],
+    "init_hook": [
+      "echo 'Welcome to devbox!' > /dev/null",
+      "nu -c scripts/cluster-setup.nu"
+    ],
     "scripts": {
       "test": ["echo \"Error: no test specified\" && exit 1"],
       "install-hook-bash": [
@@ -70,6 +73,9 @@
         "then",
         "curl -fsSL https://devbox.getfleek.dev/config/starship/starship.toml > $HOME/.config/starship.toml",
         "fi"
+      ],
+      "cluster": [
+        "nu ~/configs-files/scripts/kc-cluster.nu --cloud aws"
       ]
     }
   }

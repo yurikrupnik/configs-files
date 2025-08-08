@@ -35,6 +35,7 @@ cp $HOME/.zshenv $HOME/.zshenv.bak
 rm $HOME/.zshenv
 stow zsh
 stow starship
+stow claude
 
 curl -fsSL https://get.jetify.com/devbox | bash
 
@@ -67,3 +68,10 @@ cargo binstall salvo-cli --no-confirm
 cargo binstall cargo-watch --no-confirm
 cargo binstall cargo-component --no-confirm
 cargo binstall cargo-make --no-confirm
+cargo binstall just --no-confirm
+
+npm install -g @google/gemini-cli
+npm install -g @anthropic-ai/claude-code
+
+brew install infisical/get-cli/infisical
+brew install fluxcd/tap/flux

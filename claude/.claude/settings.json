@@ -1,0 +1,84 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matchers": ["Bash"],
+        "command": "afplay /System/Library/Sounds/Pop.aiff &"
+      },
+      {
+        "matchers": ["Bash"],
+        "patterns": ["cluster-*", "kc *", "*kind*", "*kubectl*"],
+        "command": "nu -c 'load-secrets'"
+      },
+      {
+        "matchers": ["Bash"],
+        "patterns": ["*deploy*", "*apply*", "*helm*"],
+        "command": "nu -c 'let parallel = (get-optimal-parallel build); print $\"Using ($parallel) parallel workers\"'"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matchers": ["Bash"],
+        "patterns": ["*test*", "*build*", "*deploy*"],
+        "command": "nu -c 'cleanup-secrets'"
+      },
+      {
+        "matchers": ["Edit", "MultiEdit", "Write"],
+        "patterns": ["**/src/**", "**/tests/**", "**/*.rs", "**/*.nu"],
+        "command": "nu -c 'print \"✅ Code change detected - consider running tests\"'"
+      }
+    ],
+    "Notification": [
+      {
+        "matchers": ["Bash"],
+        "command": "afplay /System/Library/Sounds/Ping.aiff &"
+      },
+      {
+        "matchers": ["Task"],
+        "command": "afplay /System/Library/Sounds/Submarine.aiff &"
+      }
+    ],
+    "Error": [
+      {
+        "matchers": ["*"],
+        "command": "afplay /System/Library/Sounds/Sosumi.aiff &"
+      },
+      {
+        "matchers": ["Bash"],
+        "patterns": ["*error*", "*failed*", "*panic*"],
+        "command": "nu -c 'print \"🚨 Error detected - check logs and cleanup if needed\" | cleanup-secrets'"
+      }
+    ]
+  },
+  "experimental": {
+    "parallelism": {
+      "bash": true,
+      "file_operations": true
+    },
+    "auto_context": {
+      "enabled": true,
+      "patterns": ["**/.env*", "**/Cargo.toml", "**/package.json", "**/pyproject.toml"]
+    }
+  },
+  "environment": {
+    "RUST_LOG": "info",
+    "KUBERNETES_CONFIG_PATH": "~/.kube/config",
+    "CLUSTER_TYPE": "kind",
+    "OBSERVABILITY_STACK": "prometheus-grafana-loki",
+    "SECRETS_BACKEND": "external-secrets",
+    "GITOPS_TOOL": "flux"
+  },
+  "aliases": {
+    "cluster-create": "nu -c 'kc'",
+    "cluster-status": "kubectl get nodes,pods -A",
+    "cluster-logs": "kubectl logs -f",
+    "cluster-port-forward": "kubectl port-forward",
+    "obs-dashboard": "kubectl port-forward -n monitoring svc/prometheus-grafana 3000:80",
+    "obs-logs": "kubectl port-forward -n loki svc/loki 3100:3100",
+    "secrets-sync": "kubectl get externalsecrets -A",
+    "app-deploy": "nu -c 'main apply crossplane'",
+    "app-test": "nu -c 'nx-run test'",
+    "app-build": "nu -c 'nx-run build'",
+    "app-lint": "nu -c 'nx-run lint'"
+  }
+}
