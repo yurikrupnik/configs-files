@@ -1,22 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/jetpack-io/devbox/0.10.1/.schema/devbox.schema.json",
   "packages": [
-    //    "gum@0.13",
-    "git",
-    //    "yq-go@0.13",
-    //    "awscli2@0.13",
-    //    "eksctl@0.13",
-    "azure-cli",
-    //  /  "nerdctl",
-    //    "kaniko",
-    "kind",
-    "gh",
-    "kubectl",
-    "bat",
-    "timoni",
-    "upbound",
-    "argo",
-    "argocd"
+
   ],
   "shell": {
     "init_hook": [

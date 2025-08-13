@@ -1,0 +1,41 @@
+localCluster:
+  name: local-dev
+  environment:
+    name: local
+    type: local
+    nodeCount: 1
+    nodeSize: small
+  applications:
+  - name: crossplane
+    namespace: crossplane-system
+    enabled: true
+    values:
+      args:
+      - '--enable-composition-functions'
+  - name: argocd
+    namespace: argocd
+    enabled: true
+    values:
+      server:
+        service:
+          type: LoadBalancer
+  - name: prometheus
+    namespace: monitoring
+    enabled: true
+  - name: loki
+    namespace: monitoring
+    enabled: true
+  - name: external-secrets
+    namespace: external-secrets
+    enabled: true
+  - name: flux
+    namespace: flux-system
+    enabled: true
+  cost:
+    budget: 100
+    alertThreshold: 50
+    currency: USD
+  monitoring:
+    uptime: true
+    metrics: true
+    logs: true

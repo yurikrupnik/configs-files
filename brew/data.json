@@ -1,0 +1,24 @@
+{
+  "app": "lili1",
+  "type": "nx-monorepo",
+  "language": "rust",
+  "ci": true,
+  "cd": true,
+  "docker": true,
+  "k8s": true,
+  "cloud": "gcp",
+  "packages": [
+    "crossplane",
+    "argo-cd",
+    "argo-rollouts",
+    "argo-events",
+    "flux",
+    "flagger",
+    "external-secrets",
+    "prometheus",
+    "loki",
+    "nginx",
+    "redis",
+    "postgres"
+  ]
+}

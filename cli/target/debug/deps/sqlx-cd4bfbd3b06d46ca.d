@@ -1,0 +1,11 @@
+/Users/yurikrupnik/configs-files/cli/target/debug/deps/libsqlx-cd4bfbd3b06d46ca.rmeta: /Users/yurikrupnik/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-0.7.4/src/lib.rs /Users/yurikrupnik/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-0.7.4/src/any/mod.rs /Users/yurikrupnik/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-0.7.4/src/macros/mod.rs /Users/yurikrupnik/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-0.7.4/src/ty_match.rs /Users/yurikrupnik/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-0.7.4/src/lib.md /Users/yurikrupnik/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-0.7.4/src/macros/test.md /Users/yurikrupnik/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-0.7.4/src/any/install_drivers_note.md
+
+/Users/yurikrupnik/configs-files/cli/target/debug/deps/sqlx-cd4bfbd3b06d46ca.d: /Users/yurikrupnik/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-0.7.4/src/lib.rs /Users/yurikrupnik/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-0.7.4/src/any/mod.rs /Users/yurikrupnik/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-0.7.4/src/macros/mod.rs /Users/yurikrupnik/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-0.7.4/src/ty_match.rs /Users/yurikrupnik/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-0.7.4/src/lib.md /Users/yurikrupnik/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-0.7.4/src/macros/test.md /Users/yurikrupnik/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-0.7.4/src/any/install_drivers_note.md
+
+/Users/yurikrupnik/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-0.7.4/src/lib.rs:
+/Users/yurikrupnik/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-0.7.4/src/any/mod.rs:
+/Users/yurikrupnik/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-0.7.4/src/macros/mod.rs:
+/Users/yurikrupnik/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-0.7.4/src/ty_match.rs:
+/Users/yurikrupnik/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-0.7.4/src/lib.md:
+/Users/yurikrupnik/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-0.7.4/src/macros/test.md:
+/Users/yurikrupnik/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/sqlx-0.7.4/src/any/install_drivers_note.md:

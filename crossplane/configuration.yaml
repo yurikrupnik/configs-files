@@ -1,0 +1,42 @@
+apiVersion: pkg.crossplane.io/v1
+kind: Configuration
+metadata:
+  name: cluster-management-config
+spec:
+  package: xpkg.upbound.io/yurikrupnik/cluster-management:v0.1.0
+  packagePullPolicy: IfNotPresent
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-kubernetes
+spec:
+  package: xpkg.upbound.io/crossplane-contrib/provider-kubernetes:v0.11.0
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-helm
+spec:
+  package: xpkg.upbound.io/crossplane-contrib/provider-helm:v0.15.0
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-aws
+spec:
+  package: xpkg.upbound.io/upbound/provider-aws:v0.34.0
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-azure
+spec:
+  package: xpkg.upbound.io/upbound/provider-azure:v0.32.0
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-gcp
+spec:
+  package: xpkg.upbound.io/upbound/provider-gcp:v0.32.0

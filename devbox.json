@@ -70,6 +70,108 @@
         "then",
         "curl -fsSL https://devbox.getfleek.dev/config/starship/starship.toml > $HOME/.config/starship.toml",
         "fi"
+      ],
+      "run-justfile": [
+        "cd scripts",
+        "just --list",
+        "echo \"Run 'devbox run run-justfile -- <target>' to execute a specific target\""
+      ],
+      "run-tests": [
+        "nu scripts/test-complete-integration.nu"
+      ],
+      "init-env": [
+        "nu init.nu --verbose"
+      ],
+      "init-env-dry-run": [
+        "nu init.nu --dry-run"
+      ],
+      "validate-env": [
+        "nu init.nu --validate-only"
+      ],
+      "build-cli": [
+        "cd cli && cargo build --release"
+      ],
+      "test-cli": [
+        "cd cli && cargo test"
+      ],
+      "test-cli-with-db": [
+        "cd cli && cargo test --features database"
+      ],
+      "install-cli": [
+        "cd cli && cargo install --path ."
+      ],
+      "run-cluster-cli": [
+        "cd cli && cargo run --"
+      ],
+      "lint-cli": [
+        "cd cli && cargo clippy -- -D warnings"
+      ],
+      "format-cli": [
+        "cd cli && cargo fmt"
+      ],
+      "clean-cli": [
+        "cd cli && cargo clean"
+      ],
+      "build-cluster-operator": [
+        "cd cluster && cargo build --release"
+      ],
+      "test-cluster-operator": [
+        "cd cluster && cargo test"
+      ],
+      "deploy-cluster-operator": [
+        "kubectl apply -f cluster/install-operator-crd.yaml",
+        "kubectl apply -f cluster/rbac.yaml",
+        "kubectl apply -f cluster/deployment.yaml"
+      ],
+      "run-cluster-manager": [
+        "cd cluster-manager && npm start"
+      ],
+      "build-cluster-manager": [
+        "cd cluster-manager && npm run build"
+      ],
+      "test-cluster-manager": [
+        "cd cluster-manager && npm test"
+      ],
+      "run-command-tracer": [
+        "cd scripts/command-tracer && npm start"
+      ],
+      "build-command-tracer": [
+        "cd scripts/command-tracer && npm run build"
+      ],
+      "test-command-tracer": [
+        "cd scripts/command-tracer && npm test"
+      ],
+      "start-database": [
+        "cd database && docker-compose up -d"
+      ],
+      "stop-database": [
+        "cd database && docker-compose down"
+      ],
+      "migrate-database": [
+        "cd database/migrations && ./migrate.sh"
+      ],
+      "run-kcl-config": [
+        "kcl run kcl/main.k"
+      ],
+      "test-kcl-config": [
+        "kcl test kcl/test.k"
+      ],
+      "generate-kcl-yaml": [
+        "kcl run kcl/main.k > kcl/yaml/generated.yaml"
+      ],
+      "deploy-crossplane": [
+        "kubectl apply -f crossplane/configuration.yaml",
+        "kubectl apply -f crossplane/xrds/cluster-xrd.yaml",
+        "kubectl apply -f crossplane/compositions/cluster-composition.yaml"
+      ],
+      "check-cluster-local": [
+        "kubectl apply -f clusters/local/cluster.yaml"
+      ],
+      "check-cluster-staging": [
+        "kubectl apply -f clusters/staging/cluster.yaml"
+      ],
+      "check-cluster-production": [
+        "kubectl apply -f clusters/production/cluster.yaml"
       ]
     }
   }
