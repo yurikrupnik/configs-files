@@ -1,7 +1,7 @@
 #!/usr/bin/env nu
 
 def "main provider setup" [
-    provider: string
+    provider: string = "local"
     --region: string = "us-central1"
     --project: string = ""
     --profile: string = "default"

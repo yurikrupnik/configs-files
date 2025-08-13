@@ -39,3 +39,7 @@ tmp/secrets/
 **/.aws/
 **/.kube/config
 **/.docker/config.json
+
+# Added by cargo
+
+/target

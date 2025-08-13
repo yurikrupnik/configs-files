@@ -64,7 +64,7 @@ def main [
 
             # Create temporary file to avoid stdin issues
             let temp_file = $"/tmp/files/kind-config-($env.USER).yaml"
-            $cluster_config | save $temp_file
+            $cluster_config | save $temp_file -f
 
             kind create cluster --config $temp_file
             rm $temp_file

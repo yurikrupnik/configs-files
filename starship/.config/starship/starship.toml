@@ -16,6 +16,10 @@ $python\
 $rust\
 $lua\
 $fill\
+#$battery\
+#$buf\
+#$env_var\
+#$deno\
 $cmd_duration $time\
 $kubernetes $namespace\
 $nix_shell\

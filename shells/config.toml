@@ -6,36 +6,72 @@ gp = "git push"
 projects = "cd ~/projects"
 configs = "cd ~/configs-files"
 
-[functions.knd]
-description = "Switch kubectl namespace"
-commands = [
-    "if ! kubectl config current-context >/dev/null 2>&1; then echo 'No kubectl context set. Run: kubectl config use-context <context>'; return 1; fi",
-    "kubectl config set-context --current --namespace={arg}"
-]
-args = ["namespace"]
+#[functions.knd]
+#description = "Switch kubectl namespace"
+#commands = [
+#    "if ! kubectl config current-context >/dev/null 2>&1; then echo 'No kubectl context set. Run: kubectl config use-context <context>'; return 1; fi",
+#    "kubectl config set-context --current --namespace={arg}"
+#]
+#args = ["namespace"]
 
-[functions.dam-update]
+[functions.update]
 description = "Update system packages"
 commands = [
     "brew bundle --file ~/configs-files/brew/Brewfile",
-    "rustup update"
+    "rustup update",
+    "gcloud components update",
+    "nu ~/configs-files/scripts/generate-shell-configs.nu"
+]
+
+[functions.locals]
+description = "Create local kind cluster"
+commands = [
+    "kind create cluster"
 ]
 
 [functions.nx-run]
 description = "Run Nx command on all projects"
-command = "bun nx run-many -t {arg} --parallel --max-parallel=10 --prod"
-args = ["task"]
+command = "bun nx run-many -t {arg} --parallel --max-parallel={arg} --prod"
+args = ["tastk", "cpu"]
 
 [functions.kc]
 description = "Create Kubernetes cluster"
 type = "complex"
-script = "~/configs-files/scripts/kc-cluster.nu"
+script = "~/configs-files/scripts/local/mod.nu"
+#
+#[functions.kd]
+#description = "Create Kubernetes cluster"
+#type = "complex"
+#script = "~/configs-files/scripts/kc-cluster.nu delete"
+#
+#[functions.build]
+#description = "Build nx monorepo project"
+#type = "complex"
+#script = "~/configs-files/scripts/nx.nu"
+#
+#[functions.local-cluster]
+#description = "Build nx monorepo project"
+#type = "complex"
+#script = "~/configs-files/scripts/nx.nu"
+#
+#[functions.generate-local-shells]
+#description = "Build nx monorepo project"
+#type = "complex"
+#script = "~/configs-files/scripts/generate-shell-configs.nu"
 
-[functions.build]
-description = "Build nx monorepo project"
-type = "complex"
-script = "~/configs-files/scripts/nx.nu"
 
 [environment]
 EDITOR = "zed"
 BROWSER = "open"
+
+SHIT_TEXT = "omg"
+SHIT = true
+AI = "claude"
+
+PROJECT = "rust"
+TYPE = "be" # fe, devops, data
+GPROJECT = "playground-447016"
+GACOUNT = "krupnik.yuri@gmail.com"
+GREGION = "me-west1"
+CLOUD = "gcp"
+
