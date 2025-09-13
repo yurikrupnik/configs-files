@@ -1,0 +1,331 @@
+# KCL Crossplane Function Test Suite
+# Orchestrates all tests in proper sequence with dependencies
+---
+apiVersion: tests.testkube.io/v3
+kind: TestSuite
+metadata:
+  name: kcl-crossplane-complete-suite
+  namespace: testkube
+  labels:
+    app: kcl-functions
+    test-suite: complete
+    component: crossplane
+spec:
+  description: "Complete test suite for KCL Crossplane functions - Integration & E2E tests"
+  
+  # Run daily at 3 AM
+  schedule: "0 3 * * *"
+  
+  # Test execution steps with dependencies
+  steps:
+  
+  # Step 1: Quick smoke test to validate basic setup
+  - stopOnFailure: true
+    execute:
+    - test: kcl-smoke-test
+      delay: 10s
+  
+  # Step 2: Integration tests (must pass before E2E)
+  - stopOnFailure: true
+    execute:
+    - test: kcl-integration-tests
+      delay: 30s
+  
+  # Step 3: E2E tests (run after integration tests pass)
+  - stopOnFailure: false
+    execute:
+    - test: kcl-e2e-tests
+      delay: 60s
+    - test: kcl-crossplane-deployment-e2e
+      delay: 30s
+  
+  # Step 4: Performance and stress tests
+  - stopOnFailure: false
+    execute:
+    - test: kcl-performance-test
+      delay: 60s
+  
+  # Post-execution cleanup and reporting
+  after:
+  - execute:
+    - test: kcl-cleanup-test-resources
+  
+  # Execution configuration
+  executionRequest:
+    # Timeout for entire suite
+    activeDeadlineSeconds: 3600  # 1 hour
+    
+    # Run with specific service account
+    jobTemplate:
+      spec:
+        template:
+          spec:
+            serviceAccountName: testkube-tests
+    
+    # Variables available to all tests
+    variables:
+      SUITE_EXECUTION: "true"
+      TEST_ENVIRONMENT: "testkube-suite"
+      LOG_LEVEL: "info"
+      SLACK_WEBHOOK_URL: "https://hooks.slack.com/your-webhook"  # Update with your webhook
+    
+    # Webhook notifications
+    webhooks:
+    - uri: "{{ .SLACK_WEBHOOK_URL }}"
+      headers:
+        Content-Type: "application/json"
+      template: |
+        {
+          "text": "🧪 KCL Test Suite {{ .TestSuite.Name }} {{ .Execution.ExecutionResult.Status }}",
+          "attachments": [{
+            "color": "{{ if eq .Execution.ExecutionResult.Status \"passed\" }}good{{ else }}danger{{ end }}",
+            "fields": [
+              {
+                "title": "Duration", 
+                "value": "{{ .Execution.Duration }}", 
+                "short": true
+              },
+              {
+                "title": "Tests", 
+                "value": "{{ len .Execution.Steps }}", 
+                "short": true
+              },
+              {
+                "title": "Environment", 
+                "value": "{{ .Variables.TEST_ENVIRONMENT }}", 
+                "short": true
+              },
+              {
+                "title": "Timestamp", 
+                "value": "{{ .Execution.StartTime }}", 
+                "short": true
+              }
+            ],
+            "actions": [{
+              "type": "button",
+              "text": "View Details",
+              "url": "{{ .DashboardURL }}/test-suites/{{ .TestSuite.Name }}/executions/{{ .Execution.Id }}"
+            }]
+          }]
+        }
+
+---
+# Quick smoke test to validate basic KCL function
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: kcl-smoke-test
+  namespace: testkube
+  labels:
+    app: kcl-functions
+    test-type: smoke
+    component: crossplane
+spec:
+  type: container
+  content:
+    type: git
+    repository:
+      type: git
+      uri: https://github.com/your-org/configs-files
+      branch: main
+      path: scripts/kcl/mod1
+  
+  executionRequest:
+    image: "alpine:latest"
+    jobTemplate:
+      spec:
+        template:
+          spec:
+            serviceAccountName: testkube-tests
+            containers:
+            - name: smoke-test
+              image: alpine:latest
+              command: ["/bin/sh", "-c"]
+              args:
+              - |
+                set -e
+                echo "💨 KCL Function Smoke Test"
+                echo "=========================="
+                
+                # Install KCL
+                apk add --no-cache curl
+                curl -fsSL https://kcl-lang.io/script/install-cli.sh | /bin/sh
+                export PATH=$PATH:/root/.kclvm/bin
+                
+                cd /data/repo/scripts/kcl/mod1
+                
+                # Basic smoke test - just verify KCL can run
+                echo "Testing basic KCL function execution..."
+                result=$(kcl run . -D 'params={"oxr": {"metadata": {"name": "smoke-test", "namespace": "default"}, "spec": {"size": "small"}}, "ocds": {}}')
+                
+                if echo "$result" | grep -q "items:" && echo "$result" | grep -q "postgresql.cnpg.io"; then
+                  echo "✅ SMOKE TEST PASSED: Basic KCL function works"
+                else
+                  echo "❌ SMOKE TEST FAILED: KCL function not working"
+                  exit 1
+                fi
+              
+              resources:
+                requests:
+                  memory: "128Mi"
+                  cpu: "50m"
+            
+            restartPolicy: Never
+
+---
+# Performance test for KCL function
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: kcl-performance-test
+  namespace: testkube
+  labels:
+    app: kcl-functions
+    test-type: performance
+    component: crossplane
+spec:
+  type: container
+  content:
+    type: git
+    repository:
+      type: git
+      uri: https://github.com/your-org/configs-files
+      branch: main
+      path: scripts/kcl/mod1
+  
+  executionRequest:
+    image: "alpine:latest"
+    jobTemplate:
+      spec:
+        template:
+          spec:
+            serviceAccountName: testkube-tests
+            containers:
+            - name: performance-test
+              image: alpine:latest
+              command: ["/bin/sh", "-c"]
+              args:
+              - |
+                set -e
+                echo "⚡ KCL Function Performance Test"
+                echo "==============================="
+                
+                # Install dependencies
+                apk add --no-cache curl time jq
+                curl -fsSL https://kcl-lang.io/script/install-cli.sh | /bin/sh
+                export PATH=$PATH:/root/.kclvm/bin
+                
+                cd /data/repo/scripts/kcl/mod1
+                
+                # Performance benchmarks
+                echo "Running performance benchmarks..."
+                
+                # Test 1: Execution time
+                echo "Test 1: Measuring execution time..."
+                start_time=$(date +%s%N)
+                
+                for i in {1..10}; do
+                  kcl run . -D 'params={"oxr": {"metadata": {"name": "perf-test-'$i'", "namespace": "default"}, "spec": {"size": "medium"}}, "ocds": {}}' > /dev/null
+                done
+                
+                end_time=$(date +%s%N)
+                duration_ms=$(( (end_time - start_time) / 1000000 ))
+                avg_ms=$(( duration_ms / 10 ))
+                
+                echo "  Total time for 10 executions: ${duration_ms}ms"
+                echo "  Average time per execution: ${avg_ms}ms"
+                
+                # Performance thresholds
+                if [ $avg_ms -lt 1000 ]; then
+                  echo "✅ PERFORMANCE PASS: Average execution under 1s"
+                else
+                  echo "⚠️  PERFORMANCE WARNING: Average execution over 1s"
+                fi
+                
+                # Test 2: Memory usage simulation
+                echo "Test 2: Testing with large configurations..."
+                
+                # Test with multiple large configurations
+                for size in "small" "medium" "large"; do
+                  echo "  Testing $size configuration..."
+                  result=$(kcl run . -D 'params={"oxr": {"metadata": {"name": "perf-'$size'", "namespace": "default"}, "spec": {"size": "'$size'"}}, "ocds": {}}')
+                  
+                  if echo "$result" | grep -q "items:"; then
+                    echo "    ✅ $size configuration: OK"
+                  else
+                    echo "    ❌ $size configuration: FAILED"
+                    exit 1
+                  fi
+                done
+                
+                # Test 3: Concurrent-like execution
+                echo "Test 3: Testing rapid sequential execution..."
+                
+                for i in {1..5}; do
+                  kcl run . -D 'params={"oxr": {"metadata": {"name": "concurrent-'$i'", "namespace": "test-'$i'"}, "spec": {"size": "small"}}, "ocds": {}}' > /dev/null &
+                done
+                
+                wait  # Wait for all background jobs
+                echo "  ✅ Rapid sequential execution completed"
+                
+                echo ""
+                echo "📊 Performance Test Summary:"
+                echo "  Average execution time: ${avg_ms}ms"
+                echo "  Configuration sizes tested: 3"
+                echo "  Sequential executions: 5"
+                echo "  Status: $([ $avg_ms -lt 1000 ] && echo 'PASS' || echo 'WARNING')"
+              
+              resources:
+                requests:
+                  memory: "256Mi"
+                  cpu: "200m"
+                limits:
+                  memory: "512Mi"
+                  cpu: "500m"
+            
+            restartPolicy: Never
+
+---
+# Cleanup test to remove any test artifacts
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: kcl-cleanup-test-resources
+  namespace: testkube
+  labels:
+    app: kcl-functions
+    test-type: cleanup
+    component: crossplane
+spec:
+  type: container
+  content:
+    type: string
+    data: |
+      #!/bin/sh
+      echo "🧹 Cleaning up KCL test resources..."
+      echo "==================================="
+      
+      # This is a placeholder for cleanup operations
+      # In a real scenario, you might:
+      # - Clean up test databases
+      # - Remove temporary Kubernetes resources  
+      # - Clear test data
+      # - Reset configurations
+      
+      echo "✅ Cleanup completed (placeholder)"
+  
+  executionRequest:
+    image: "alpine:latest"
+    jobTemplate:
+      spec:
+        template:
+          spec:
+            serviceAccountName: testkube-tests
+            containers:
+            - name: cleanup
+              image: alpine:latest
+              resources:
+                requests:
+                  memory: "64Mi"
+                  cpu: "25m"
+            restartPolicy: Never

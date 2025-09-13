@@ -28,21 +28,21 @@ export def main [
   #     setup_local_registry $cluster_name
   # }
 
-   install_gateway_api
+   #install_gateway_api
 
-   if $gitops == "flux" {
-       install_flux
-   } else if $gitops == "argo" {
-       install_argocd
-   }
+   #if $gitops == "flux" {
+    #   install_flux
+   #} else if $gitops == "argo" {
+    #   install_argocd
+   #}
 
-   if $observability {
-       install_observability_stack $gitops
-   }
+   #if $observability {
+    #   install_observability_stack $gitops
+   #}
 
-   if $secrets {
-       install_external_secrets $gitops
-   }
+   #if $secrets {
+    #   install_external_secrets $gitops
+   #}
 }
 
 def "main delete" [] {
@@ -54,8 +54,8 @@ def "main delete" [] {
 
 export def "main list" [] {
     print "list cluster"
-    let kubeconfig = (kind get kubeconfig)
-    print $kubeconfig
+    # let kubeconfig = (kind get kubeconfig)
+    # print $kubeconfig
     {
         currentContext: "",
         name: "dev"

@@ -1,9 +1,12 @@
 import k8s.api.apps.v1 as apps
 import k8s.api.core.v1 as core
 import k8s.apimachinery.pkg.apis.meta.v1 as metav1
+#import my_package.be.config as config
+#import my_package.be.functions as f
 
 # Configuration schema
 schema AppConfig:
+    _deployment: apps.Deployment
     #da: metav1.Deployment
     name: str
     namespace?: str = "default"

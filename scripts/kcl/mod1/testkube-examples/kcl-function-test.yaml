@@ -1,0 +1,77 @@
+# Testkube Test for KCL Crossplane Function
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: kcl-crossplane-function-test
+  namespace: testkube
+  labels:
+    app: crossplane
+    component: kcl-function
+    test-type: integration
+spec:
+  type: "postman/collection"
+  content:
+    type: git
+    repository:
+      type: git
+      uri: https://github.com/your-repo/kcl-functions
+      branch: main
+      path: scripts/kcl/mod1
+  executionRequest:
+    # Run tests every time a new version is deployed
+    schedule: "0 */2 * * *"  # Every 2 hours
+    variables:
+      TEST_ENV: "staging"
+      KCL_FUNCTION_VERSION: "latest"
+---
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: kcl-function-unit-tests
+  namespace: testkube
+spec:
+  type: "curl/test"
+  content:
+    type: string
+    data: |
+      # Test KCL function with different sizes
+      curl -X POST http://kcl-function-service:8080/test \
+        -H "Content-Type: application/json" \
+        -d '{
+          "params": {
+            "oxr": {
+              "metadata": {"name": "test-small", "namespace": "default"},
+              "spec": {"size": "small"}
+            },
+            "ocds": {}
+          }
+        }'
+  
+      # Validate small configuration
+      if [[ $(echo $response | jq '.items[0].spec.instances') != "1" ]]; then
+        echo "FAIL: Small instance count incorrect"
+        exit 1
+      fi
+      
+      echo "PASS: Small configuration validated"
+---
+apiVersion: tests.testkube.io/v3
+kind: TestSuite
+metadata:
+  name: kcl-crossplane-suite
+  namespace: testkube
+spec:
+  description: "Complete test suite for KCL Crossplane functions"
+  schedule: "0 6 * * *"  # Daily at 6 AM
+  steps:
+  - stopOnFailure: false
+    execute:
+    - test: kcl-function-unit-tests
+      delay: 10s
+  - stopOnFailure: true
+    execute:
+    - test: kcl-crossplane-function-test
+      delay: 30s
+  after:
+  - execute:
+    - test: cleanup-test-resources

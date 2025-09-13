@@ -69,6 +69,9 @@ cargo binstall cargo-watch --no-confirm
 cargo binstall cargo-component --no-confirm
 cargo binstall cargo-make --no-confirm
 cargo binstall just --no-confirm
+cargo binstall cargo-readme --no-confirm
+cargo binstall cargo-tarpaulin --no-confirm
+cargo binstall cargo-outdated --no-confirm
 
 npm install -g @google/gemini-cli
 npm install -g @anthropic-ai/claude-code

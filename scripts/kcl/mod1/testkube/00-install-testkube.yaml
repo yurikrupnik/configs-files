@@ -1,0 +1,89 @@
+# Testkube Installation Manifest
+# This will install Testkube in your Kubernetes cluster
+
+---
+# Create namespace for Testkube
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: testkube
+  labels:
+    app: testkube
+
+---
+# Testkube Operator Installation
+# Note: This is a placeholder - in practice you'd use Helm or the official installer
+# Run: helm repo add testkube https://kubeshop.github.io/helm-charts
+#      helm install testkube testkube/testkube -n testkube --create-namespace
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: testkube-install-instructions
+  namespace: testkube
+data:
+  install.sh: |
+    #!/bin/bash
+    
+    # Install Testkube using Helm
+    echo "Installing Testkube..."
+    
+    # Add Helm repository
+    helm repo add testkube https://kubeshop.github.io/helm-charts
+    helm repo update
+    
+    # Install Testkube
+    helm install testkube testkube/testkube \
+      --namespace testkube \
+      --create-namespace \
+      --set testkube-dashboard.enabled=true \
+      --set testkube-api.image.tag=latest \
+      --set mongodb.enabled=true
+    
+    # Wait for deployment
+    kubectl wait --for=condition=available --timeout=300s deployment/testkube-api-server -n testkube
+    kubectl wait --for=condition=available --timeout=300s deployment/testkube-dashboard -n testkube
+    
+    echo "Testkube installed successfully!"
+    echo "Access dashboard: kubectl port-forward -n testkube svc/testkube-dashboard 8080:8080"
+    echo "Access API: kubectl port-forward -n testkube svc/testkube-api-server 8088:8088"
+
+---
+# ServiceAccount for test execution
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: testkube-tests
+  namespace: testkube
+
+---
+# ClusterRole for test permissions
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: testkube-tests
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "secrets"]
+  verbs: ["get", "list", "create", "update", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list"]
+- apiGroups: ["apiextensions.crossplane.io"]
+  resources: ["compositions", "compositeresourcedefinitions"]
+  verbs: ["get", "list"]
+
+---
+# ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: testkube-tests
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: testkube-tests
+subjects:
+- kind: ServiceAccount
+  name: testkube-tests
+  namespace: testkube

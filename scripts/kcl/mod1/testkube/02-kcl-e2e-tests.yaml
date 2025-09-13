@@ -1,0 +1,364 @@
+# KCL Function E2E Tests - Converted from e2e-test.nu
+---
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: kcl-e2e-tests
+  namespace: testkube
+  labels:
+    app: kcl-functions
+    test-type: e2e
+    component: crossplane
+spec:
+  type: container
+  content:
+    type: git
+    repository:
+      type: git
+      uri: https://github.com/your-org/configs-files  # Update with your repo
+      branch: main
+      path: scripts/kcl/mod1
+  
+  # Container specification for E2E scenario testing
+  executionRequest:
+    image: "alpine:latest"
+    command: ["/bin/sh"]
+    args: ["-c"]
+    jobTemplate:
+      spec:
+        template:
+          spec:
+            serviceAccountName: testkube-tests
+            containers:
+            - name: kcl-e2e-test
+              image: alpine:latest
+              command: ["/bin/sh", "-c"]
+              args:
+              - |
+                set -e
+                echo "🚀 KCL Crossplane Function E2E Testing"
+                echo "======================================"
+                
+                # Install dependencies
+                echo "Installing dependencies..."
+                apk add --no-cache curl jq bash wget tar
+                
+                # Install KCL
+                echo "Installing KCL..."
+                curl -fsSL https://kcl-lang.io/script/install-cli.sh | /bin/sh
+                export PATH=$PATH:/root/.kclvm/bin
+                
+                # Change to test directory
+                cd /data/repo/scripts/kcl/mod1
+                
+                echo ""
+                echo "📊 E2E Test Scenarios"
+                echo "====================="
+                
+                # Scenario 1: Development Environment - Small PostgreSQL
+                echo "🔬 Scenario 1: Development Environment (Small)"
+                echo "  Parameters:"
+                echo "    Name: dev-postgres-small"
+                echo "    Namespace: development"
+                echo "    Size: small"
+                
+                result=$(kcl run . -D 'params={
+                  "oxr": {
+                    "metadata": {"name": "dev-postgres-small", "namespace": "development"},
+                    "spec": {"size": "small"}
+                  },
+                  "ocds": {}
+                }')
+                
+                # Validate small configuration
+                if echo "$result" | grep -q "instances: 1" && echo "$result" | grep -q "size: '1Gi'"; then
+                  echo "  ✅ SUCCESS: Generated PostgreSQL cluster and secret resources"
+                  echo "    ✓ Small configuration validated"
+                else
+                  echo "  ❌ FAILED: Small configuration mismatch"
+                  echo "$result"
+                  exit 1
+                fi
+                
+                # Scenario 2: Staging Environment - Medium PostgreSQL  
+                echo ""
+                echo "🔬 Scenario 2: Staging Environment (Medium)"
+                echo "  Parameters:"
+                echo "    Name: staging-postgres-medium"
+                echo "    Namespace: staging"
+                echo "    Size: medium"
+                
+                result=$(kcl run . -D 'params={
+                  "oxr": {
+                    "metadata": {"name": "staging-postgres-medium", "namespace": "staging"},
+                    "spec": {"size": "medium"}
+                  },
+                  "ocds": {}
+                }')
+                
+                # Validate medium configuration
+                if echo "$result" | grep -q "instances: 3" && echo "$result" | grep -q "size: '3Gi'"; then
+                  echo "  ✅ SUCCESS: Generated PostgreSQL cluster and secret resources"
+                  echo "    ✓ Medium configuration validated"
+                else
+                  echo "  ❌ FAILED: Medium configuration mismatch"
+                  echo "$result"
+                  exit 1
+                fi
+                
+                # Scenario 3: Production Environment - Large PostgreSQL
+                echo ""
+                echo "🔬 Scenario 3: Production Environment (Large)"
+                echo "  Parameters:"
+                echo "    Name: prod-postgres-large"
+                echo "    Namespace: production"
+                echo "    Size: large"
+                
+                result=$(kcl run . -D 'params={
+                  "oxr": {
+                    "metadata": {"name": "prod-postgres-large", "namespace": "production"},
+                    "spec": {"size": "large"}
+                  },
+                  "ocds": {}
+                }')
+                
+                # Validate large configuration
+                if echo "$result" | grep -q "instances: 6" && echo "$result" | grep -q "size: '6Gi'"; then
+                  echo "  ✅ SUCCESS: Generated PostgreSQL cluster and secret resources"
+                  echo "    ✓ Large configuration validated"
+                else
+                  echo "  ❌ FAILED: Large configuration mismatch"
+                  echo "$result"
+                  exit 1
+                fi
+                
+                # Scenario 4: Existing Resources Scenario
+                echo ""
+                echo "🔬 Scenario 4: Existing Resources Integration"
+                echo "  Parameters:"
+                echo "    Name: existing-postgres"
+                echo "    Namespace: integration"
+                echo "    Size: medium"
+                echo "    OCDS: Contains existing cluster info"
+                
+                result=$(kcl run . -D 'params={
+                  "oxr": {
+                    "metadata": {"name": "existing-postgres", "namespace": "integration"},
+                    "spec": {"size": "medium"}
+                  },
+                  "ocds": {
+                    "cluster": {
+                      "Resource": {
+                        "status": {
+                          "atProvider": {
+                            "serviceHost": "existing-postgres.integration.svc.cluster.local"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }')
+                
+                # Validate existing resources scenario
+                if echo "$result" | grep -q "instances: 3" && echo "$result" | grep -q "size: '3Gi'"; then
+                  echo "  ✅ SUCCESS: Generated PostgreSQL cluster and secret resources"
+                  echo "    ✓ Medium configuration validated with existing resources"
+                else
+                  echo "  ❌ FAILED: Existing resources scenario failed"
+                  echo "$result"
+                  exit 1
+                fi
+                
+                # Scenario 5: Cross-Environment Resource Naming
+                echo ""
+                echo "🔬 Scenario 5: Cross-Environment Resource Naming"
+                echo "  Testing resource naming consistency across environments"
+                
+                # Test multiple environments
+                environments=("dev" "staging" "prod")
+                for env in "${environments[@]}"; do
+                  echo "  Testing environment: $env"
+                  
+                  result=$(kcl run . -D "params={
+                    \"oxr\": {
+                      \"metadata\": {\"name\": \"db-$env\", \"namespace\": \"$env\"},
+                      \"spec\": {\"size\": \"small\"}
+                    },
+                    \"ocds\": {}
+                  }")
+                  
+                  if echo "$result" | grep -q "name: db-$env" && echo "$result" | grep -q "namespace: $env"; then
+                    echo "    ✓ Environment $env naming validated"
+                  else
+                    echo "    ❌ Environment $env naming failed"
+                    exit 1
+                  fi
+                done
+                
+                # Summary Report
+                echo ""
+                echo "📊 E2E Test Report"
+                echo "=================="
+                echo "Total scenarios: 5"
+                echo "✅ Passed: 5"
+                echo "❌ Failed: 0"
+                echo ""
+                echo "Tested scenarios:"
+                echo "  ✓ Development environment (small)"
+                echo "  ✓ Staging environment (medium)"
+                echo "  ✓ Production environment (large)"
+                echo "  ✓ Existing resources integration"
+                echo "  ✓ Cross-environment naming consistency"
+                echo ""
+                echo "🎉 All E2E tests passed! Your KCL function is ready for Crossplane."
+                
+                # Generate test metrics
+                echo ""
+                echo "📈 Test Metrics:"
+                echo "  Test execution time: $(date)"
+                echo "  Environment: $TEST_ENVIRONMENT"
+                echo "  KCL version: $(kcl version | head -n1)"
+                echo "  Resource types validated: 2 (PostgreSQL Cluster, Kubernetes Object)"
+                echo "  Configuration sizes tested: 3 (small, medium, large)"
+                echo "  Environments tested: 4 (development, staging, production, integration)"
+              
+              resources:
+                requests:
+                  memory: "256Mi"
+                  cpu: "100m"
+                limits:
+                  memory: "512Mi"
+                  cpu: "500m"
+              
+              env:
+              - name: TEST_ENVIRONMENT
+                value: "e2e-testkube"
+              - name: E2E_TIMEOUT
+                value: "300"
+              - name: KCL_CACHE_DIR
+                value: "/tmp/kcl-cache"
+              
+              volumeMounts:
+              - name: cache
+                mountPath: /tmp/kcl-cache
+            
+            volumes:
+            - name: cache
+              emptyDir: {}
+            
+            restartPolicy: Never
+  
+  # Schedule for regular E2E validation
+  schedule: "0 4 * * *"  # Daily at 4 AM
+  variables:
+    TEST_ENVIRONMENT: "e2e"
+    TIMEOUT: "600"
+
+---
+# E2E Test for specific Crossplane events
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: kcl-crossplane-deployment-e2e
+  namespace: testkube
+  labels:
+    app: kcl-functions
+    test-type: deployment-e2e
+    component: crossplane
+spec:
+  type: container
+  content:
+    type: git
+    repository:
+      type: git
+      uri: https://github.com/your-org/configs-files
+      branch: main
+      path: scripts/kcl/mod1
+  
+  executionRequest:
+    image: "alpine:latest"
+    jobTemplate:
+      spec:
+        template:
+          spec:
+            serviceAccountName: testkube-tests
+            containers:
+            - name: deployment-e2e
+              image: alpine:latest
+              command: ["/bin/sh", "-c"]
+              args:
+              - |
+                set -e
+                echo "🔄 KCL Crossplane Deployment E2E Test"
+                echo "====================================="
+                
+                # Install dependencies
+                apk add --no-cache curl kubectl jq
+                
+                # Install KCL
+                curl -fsSL https://kcl-lang.io/script/install-cli.sh | /bin/sh
+                export PATH=$PATH:/root/.kclvm/bin
+                
+                cd /data/repo/scripts/kcl/mod1
+                
+                # Simulate a Crossplane composition deployment scenario
+                echo "Testing KCL function as if called by Crossplane..."
+                
+                # Test with realistic Crossplane parameters
+                result=$(kcl run . -D 'params={
+                  "oxr": {
+                    "metadata": {
+                      "name": "webapp-db-prod",
+                      "namespace": "crossplane-system",
+                      "labels": {
+                        "crossplane.io/claim-name": "webapp-database",
+                        "crossplane.io/claim-namespace": "production"
+                      }
+                    },
+                    "spec": {
+                      "size": "medium",
+                      "storageClass": "fast-ssd",
+                      "backup": true
+                    }
+                  },
+                  "ocds": {}
+                }')
+                
+                # Validate Crossplane-style output
+                echo "Validating Crossplane deployment output..."
+                
+                if echo "$result" | grep -q "postgresql.cnpg.io/v1" && echo "$result" | grep -q "kubernetes.m.crossplane.io/v1alpha1"; then
+                  echo "✅ PASS: Correct resource types generated"
+                else
+                  echo "❌ FAIL: Missing required resource types"
+                  exit 1
+                fi
+                
+                # Validate metadata propagation
+                if echo "$result" | grep -q "name: webapp-db-prod"; then
+                  echo "✅ PASS: Resource naming correct"
+                else
+                  echo "❌ FAIL: Resource naming incorrect"
+                  exit 1
+                fi
+                
+                # Validate composition annotations
+                if echo "$result" | grep -q "krm.kcl.dev/composition-resource-name"; then
+                  echo "✅ PASS: Composition annotations present"
+                else
+                  echo "❌ FAIL: Missing composition annotations"
+                  exit 1
+                fi
+                
+                echo ""
+                echo "🎉 Crossplane deployment E2E test completed successfully!"
+                
+              resources:
+                requests:
+                  memory: "128Mi"
+                  cpu: "50m"
+                limits:
+                  memory: "256Mi"
+                  cpu: "200m"
+            
+            restartPolicy: Never

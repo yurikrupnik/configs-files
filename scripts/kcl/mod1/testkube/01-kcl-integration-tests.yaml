@@ -1,0 +1,183 @@
+# KCL Function Integration Tests - Converted from integration-test.nu
+---
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: kcl-integration-tests
+  namespace: testkube
+  labels:
+    app: kcl-functions
+    test-type: integration
+    component: crossplane
+spec:
+  type: container
+  content:
+    type: git
+    repository:
+      type: git
+      uri: https://github.com/your-org/configs-files  # Update with your repo
+      branch: main
+      path: scripts/kcl/mod1
+  
+  # Container specification for Nu shell + KCL
+  executionRequest:
+    image: "alpine:latest"
+    command: ["/bin/sh"]
+    args: ["-c"]
+    # Install dependencies and run tests
+    jobTemplate:
+      spec:
+        template:
+          spec:
+            serviceAccountName: testkube-tests
+            containers:
+            - name: kcl-nu-test
+              image: alpine:latest
+              command: ["/bin/sh", "-c"]
+              args:
+              - |
+                set -e
+                echo "🧪 Setting up KCL Integration Test Environment"
+                
+                # Install dependencies
+                echo "Installing curl, jq, and other tools..."
+                apk add --no-cache curl jq bash
+                
+                # Install KCL
+                echo "Installing KCL..."
+                curl -fsSL https://kcl-lang.io/script/install-cli.sh | /bin/sh
+                export PATH=$PATH:/root/.kclvm/bin
+                
+                # Install Nu shell
+                echo "Installing Nu shell..."
+                wget -O nu.tar.gz https://github.com/nushell/nushell/releases/download/0.86.0/nu-0.86.0-x86_64-unknown-linux-musl.tar.gz
+                tar -xzf nu.tar.gz
+                mv nu-0.86.0-x86_64-unknown-linux-musl/nu /usr/local/bin/
+                chmod +x /usr/local/bin/nu
+                
+                # Change to test directory
+                cd /data/repo/scripts/kcl/mod1
+                
+                echo "📋 Running KCL Integration Tests..."
+                
+                # Test 1: Small configuration
+                echo "Test 1: Small database configuration"
+                result=$(kcl run . -D 'params={"oxr": {"metadata": {"name": "test-small", "namespace": "default"}, "spec": {"size": "small"}}, "ocds": {}}')
+                
+                if echo "$result" | grep -q "instances: 1" && echo "$result" | grep -q "size: '1Gi'"; then
+                  echo "✅ PASS: Small configuration test"
+                else
+                  echo "❌ FAIL: Small configuration test"
+                  echo "$result"
+                  exit 1
+                fi
+                
+                # Test 2: Medium configuration  
+                echo "Test 2: Medium database configuration"
+                result=$(kcl run . -D 'params={"oxr": {"metadata": {"name": "test-medium", "namespace": "default"}, "spec": {"size": "medium"}}, "ocds": {}}')
+                
+                if echo "$result" | grep -q "instances: 3" && echo "$result" | grep -q "size: '3Gi'"; then
+                  echo "✅ PASS: Medium configuration test"
+                else
+                  echo "❌ FAIL: Medium configuration test"
+                  echo "$result"
+                  exit 1
+                fi
+                
+                # Test 3: Large configuration
+                echo "Test 3: Large database configuration"
+                result=$(kcl run . -D 'params={"oxr": {"metadata": {"name": "test-large", "namespace": "default"}, "spec": {"size": "large"}}, "ocds": {}}')
+                
+                if echo "$result" | grep -q "instances: 6" && echo "$result" | grep -q "size: '6Gi'"; then
+                  echo "✅ PASS: Large configuration test"
+                else
+                  echo "❌ FAIL: Large configuration test"
+                  echo "$result"
+                  exit 1
+                fi
+                
+                # Test 4: Resource creation validation
+                echo "Test 4: Resource creation validation"
+                if echo "$result" | grep -q "apiVersion: postgresql.cnpg.io/v1" && echo "$result" | grep -q "kind: Cluster"; then
+                  echo "✅ PASS: PostgreSQL cluster resource created"
+                else
+                  echo "❌ FAIL: PostgreSQL cluster resource not found"
+                  exit 1
+                fi
+                
+                if echo "$result" | grep -q "apiVersion: kubernetes.m.crossplane.io/v1alpha1" && echo "$result" | grep -q "kind: Object"; then
+                  echo "✅ PASS: Secret object resource created"
+                else
+                  echo "❌ FAIL: Secret object resource not found"
+                  exit 1
+                fi
+                
+                # Test 5: Naming and annotations
+                echo "Test 5: Naming and annotations validation"
+                result=$(kcl run . -D 'params={"oxr": {"metadata": {"name": "my-database", "namespace": "production"}, "spec": {"size": "small"}}, "ocds": {}}')
+                
+                if echo "$result" | grep -q "name: my-database" && echo "$result" | grep -q "namespace: production"; then
+                  echo "✅ PASS: Naming validation"
+                else
+                  echo "❌ FAIL: Naming validation"
+                  exit 1
+                fi
+                
+                if echo "$result" | grep -q "krm.kcl.dev/composition-resource-name: cluster" && echo "$result" | grep -q "krm.kcl.dev/composition-resource-name: sql-secret"; then
+                  echo "✅ PASS: Annotations validation"
+                else
+                  echo "❌ FAIL: Annotations validation"
+                  exit 1
+                fi
+                
+                echo ""
+                echo "🎉 All KCL Integration Tests Passed!"
+                echo "====================================="
+                echo "✅ Size configurations (small, medium, large)"
+                echo "✅ Resource generation (PostgreSQL cluster + Secret)"
+                echo "✅ Naming and namespace handling"
+                echo "✅ Composition annotations"
+              
+              resources:
+                requests:
+                  memory: "256Mi"
+                  cpu: "100m"
+                limits:
+                  memory: "512Mi"
+                  cpu: "500m"
+              
+              env:
+              - name: TEST_ENV
+                value: "testkube"
+              - name: KCL_CACHE_DIR
+                value: "/tmp/kcl-cache"
+              
+              volumeMounts:
+              - name: cache
+                mountPath: /tmp/kcl-cache
+            
+            volumes:
+            - name: cache
+              emptyDir: {}
+            
+            restartPolicy: Never
+  
+  # Schedule and variables
+  schedule: "0 6 * * *"  # Daily at 6 AM
+  variables:
+    TEST_ENVIRONMENT: "staging"
+    LOG_LEVEL: "info"
+
+---
+# Test execution trigger on Git changes
+apiVersion: tests.testkube.io/v3
+kind: TestTrigger
+metadata:
+  name: kcl-integration-git-trigger
+  namespace: testkube
+spec:
+  resource: test
+  resourceSelector:
+    name: kcl-integration-tests
+  event: created
+  action: run

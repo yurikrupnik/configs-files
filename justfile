@@ -24,3 +24,7 @@ cluster:
         me-west1-docker.pkg.dev
 
     nu ~/configs-files/scripts/nx.nu
+    # storage
+    kcl run scripts/kcl/storage/main.k -Y scripts/kcl/storage/kcl.yaml
+    # mod1
+    kcl run . -D params='{"oxr": {"metadata": {"name": "small-db", "namespace": "test"}, "spec": {"size": "small"}}, "ocds": {}}'

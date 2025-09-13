@@ -1,10 +1,27 @@
 [aliases]
-gs = "git status"
-ga = "git add"
-gc = "git commit -m"
-gp = "git push"
-projects = "cd ~/projects"
-configs = "cd ~/configs-files"
+lg = 'lazygit'
+#alias k=kubectl
+#alias kx=kubectx
+lsl = 'eza --no-permissions --no-user --no-time --long'
+u = 'update'
+#alias ls='eza --no-permissions --no-user --no-time'
+#alias cat='bat --paging never --style plain'
+#alias fzfp='fzf --preview="bat --style numbers --color=always {}"'
+#alias d=docker
+#alias drmi='docker rmi $(docker images -aq) -f'
+#alias dclean='docker system prune -f && docker volume prune -f'
+#alias g=gcloud
+#alias pu=pulumi
+#alias p=pnpm
+#alias c=cargo
+#alias cdoc=cargo doc
+#alias cdoco=cargo doc --open
+#gs = "git status"
+#ga = "git add"
+#gc = "git commit -m"
+#gp = "git push"
+#projects = "cd ~/projects"
+#configs = "cd ~/configs-files"
 
 #[functions.knd]
 #description = "Switch kubectl namespace"
@@ -20,6 +37,13 @@ commands = [
     "brew bundle --file ~/configs-files/brew/Brewfile",
     "rustup update",
     "gcloud components update",
+    "npm update -g",
+    "nu ~/configs-files/scripts/generate-shell-configs.nu"
+]
+
+[functions.local-dev]
+description = "Create a local dev envirement"
+commands = [
     "nu ~/configs-files/scripts/generate-shell-configs.nu"
 ]
 

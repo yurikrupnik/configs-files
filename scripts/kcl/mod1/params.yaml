@@ -1,0 +1,8 @@
+params:
+  oxr:
+    metadata:
+      name: example-db
+      namespace: production
+    spec:
+      size: medium
+  ocds: {}

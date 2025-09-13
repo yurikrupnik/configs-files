@@ -1,0 +1,394 @@
+# Deployment and Monitoring Setup for KCL Testkube Tests
+
+---
+# Deployment script as ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: testkube-deployment-scripts
+  namespace: testkube
+data:
+  deploy.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "🚀 Deploying KCL Testkube Tests"
+    echo "==============================="
+    
+    # Check if kubectl is available
+    if ! command -v kubectl &> /dev/null; then
+        echo "❌ kubectl is not available"
+        exit 1
+    fi
+    
+    # Check if Testkube is installed
+    if ! kubectl get deployment testkube-api-server -n testkube &> /dev/null; then
+        echo "⚠️  Testkube is not installed. Installing..."
+        
+        # Install Testkube using Helm
+        if command -v helm &> /dev/null; then
+            helm repo add testkube https://kubeshop.github.io/helm-charts
+            helm repo update
+            helm install testkube testkube/testkube --namespace testkube --create-namespace
+            
+            # Wait for Testkube to be ready
+            kubectl wait --for=condition=available --timeout=300s deployment/testkube-api-server -n testkube
+            echo "✅ Testkube installed successfully"
+        else
+            echo "❌ Helm is not available. Please install Testkube manually"
+            exit 1
+        fi
+    fi
+    
+    # Apply all Testkube configurations
+    echo ""
+    echo "📦 Deploying test configurations..."
+    
+    # Apply in order
+    files=(
+        "00-install-testkube.yaml"
+        "04-environment-config.yaml" 
+        "01-kcl-integration-tests.yaml"
+        "02-kcl-e2e-tests.yaml"
+        "03-kcl-test-suite.yaml"
+    )
+    
+    for file in "${files[@]}"; do
+        if [ -f "$file" ]; then
+            echo "  Applying $file..."
+            kubectl apply -f "$file"
+        else
+            echo "  ⚠️  File $file not found, skipping"
+        fi
+    done
+    
+    echo ""
+    echo "🔍 Verifying deployment..."
+    
+    # Check tests
+    echo "Tests:"
+    kubectl get tests -n testkube
+    
+    echo ""
+    echo "Test Suites:"
+    kubectl get testsuites -n testkube
+    
+    echo ""
+    echo "✅ Deployment completed!"
+    echo ""
+    echo "🎯 Next Steps:"
+    echo "1. Access Testkube Dashboard: kubectl port-forward -n testkube svc/testkube-dashboard 8080:8080"
+    echo "2. Run a test: kubectl testkube run test kcl-integration-tests -n testkube"
+    echo "3. Run test suite: kubectl testkube run testsuite kcl-crossplane-complete-suite -n testkube"
+    echo "4. View results: kubectl testkube get executions -n testkube"
+  
+  monitor.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "📊 KCL Testkube Monitoring"
+    echo "========================="
+    
+    # Function to get test status
+    get_test_status() {
+        local test_name=$1
+        local executions=$(kubectl testkube get executions --test "$test_name" -n testkube --output json 2>/dev/null || echo "[]")
+        local last_status=$(echo "$executions" | jq -r '.[0].executionResult.status // "never-run"')
+        echo "$last_status"
+    }
+    
+    # Function to get last execution time
+    get_last_execution() {
+        local test_name=$1
+        local executions=$(kubectl testkube get executions --test "$test_name" -n testkube --output json 2>/dev/null || echo "[]")
+        local last_time=$(echo "$executions" | jq -r '.[0].startTime // "never"')
+        if [ "$last_time" != "never" ]; then
+            date -d "$last_time" 2>/dev/null || echo "$last_time"
+        else
+            echo "Never run"
+        fi
+    }
+    
+    echo "🧪 Test Status Overview"
+    echo "======================"
+    
+    tests=(
+        "kcl-integration-tests"
+        "kcl-e2e-tests" 
+        "kcl-crossplane-deployment-e2e"
+        "kcl-smoke-test"
+        "kcl-performance-test"
+    )
+    
+    for test in "${tests[@]}"; do
+        status=$(get_test_status "$test")
+        last_run=$(get_last_execution "$test")
+        
+        case $status in
+            "passed")
+                icon="✅"
+                ;;
+            "failed")
+                icon="❌"
+                ;;
+            "running")
+                icon="🔄"
+                ;;
+            *)
+                icon="⚪"
+                ;;
+        esac
+        
+        printf "%-35s %s %-10s %s\n" "$test" "$icon" "$status" "$last_run"
+    done
+    
+    echo ""
+    echo "📈 Test Suite Status"
+    echo "==================="
+    
+    suite_status=$(get_test_status "kcl-crossplane-complete-suite")
+    suite_last_run=$(get_last_execution "kcl-crossplane-complete-suite")
+    
+    case $suite_status in
+        "passed")
+            suite_icon="✅"
+            ;;
+        "failed")
+            suite_icon="❌"
+            ;;
+        "running")
+            suite_icon="🔄"
+            ;;
+        *)
+            suite_icon="⚪"
+            ;;
+    esac
+    
+    printf "%-35s %s %-10s %s\n" "kcl-crossplane-complete-suite" "$suite_icon" "$suite_status" "$suite_last_run"
+    
+    echo ""
+    echo "🔧 Recent Failed Tests"
+    echo "====================="
+    
+    # Show recent failures
+    failed_executions=$(kubectl testkube get executions -n testkube --output json | jq -r '.[] | select(.executionResult.status == "failed") | "\(.testName): \(.executionResult.errorMessage // "No error message")"' | head -5)
+    
+    if [ -z "$failed_executions" ]; then
+        echo "🎉 No recent failures!"
+    else
+        echo "$failed_executions"
+    fi
+    
+    echo ""
+    echo "📊 Statistics"
+    echo "============"
+    
+    total_executions=$(kubectl testkube get executions -n testkube --output json | jq length)
+    passed_executions=$(kubectl testkube get executions -n testkube --output json | jq '[.[] | select(.executionResult.status == "passed")] | length')
+    failed_executions=$(kubectl testkube get executions -n testkube --output json | jq '[.[] | select(.executionResult.status == "failed")] | length')
+    
+    echo "Total executions: $total_executions"
+    echo "Passed: $passed_executions"
+    echo "Failed: $failed_executions"
+    
+    if [ $total_executions -gt 0 ]; then
+        success_rate=$(( passed_executions * 100 / total_executions ))
+        echo "Success rate: $success_rate%"
+    fi
+
+  cleanup.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "🧹 Cleaning up KCL Testkube Resources"
+    echo "===================================="
+    
+    # Delete tests
+    echo "Deleting tests..."
+    kubectl delete tests -l app=kcl-functions -n testkube --ignore-not-found=true
+    
+    # Delete test suites
+    echo "Deleting test suites..."
+    kubectl delete testsuites -l app=kcl-functions -n testkube --ignore-not-found=true
+    
+    # Delete ConfigMaps
+    echo "Deleting ConfigMaps..."
+    kubectl delete configmap kcl-test-scripts -n testkube --ignore-not-found=true
+    kubectl delete configmap test-environment-config -n testkube --ignore-not-found=true
+    kubectl delete configmap kcl-testkube-dockerfile -n testkube --ignore-not-found=true
+    kubectl delete configmap testkube-deployment-scripts -n testkube --ignore-not-found=true
+    
+    # Delete PVC
+    echo "Deleting PVC..."
+    kubectl delete pvc kcl-test-cache -n testkube --ignore-not-found=true
+    
+    # Delete Secret
+    echo "Deleting Secret..."
+    kubectl delete secret git-repo-secret -n testkube --ignore-not-found=true
+    
+    echo "✅ Cleanup completed!"
+
+---
+# ServiceMonitor for Prometheus integration (if using Prometheus)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: testkube-metrics
+  namespace: testkube
+  labels:
+    app: testkube
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: testkube-api-server
+  endpoints:
+  - port: http
+
+---
+# Grafana Dashboard ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kcl-testkube-dashboard
+  namespace: testkube
+  labels:
+    grafana_dashboard: "1"
+data:
+  kcl-testkube-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "KCL Testkube Dashboard",
+        "tags": ["testkube", "kcl", "crossplane"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Test Execution Success Rate",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "testkube_test_executions_total{status=\"passed\"} / testkube_test_executions_total * 100",
+                "legendFormat": "Success Rate %"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "percent",
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": 0},
+                    {"color": "yellow", "value": 80},
+                    {"color": "green", "value": 95}
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "id": 2,
+            "title": "Test Execution Duration",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "testkube_test_execution_duration_seconds{test_name=~\"kcl-.*\"}",
+                "legendFormat": "{{test_name}}"
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "title": "Failed Tests Over Time",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "increase(testkube_test_executions_total{status=\"failed\",test_name=~\"kcl-.*\"}[1h])",
+                "legendFormat": "{{test_name}}"
+              }
+            ]
+          }
+        ],
+        "time": {
+          "from": "now-24h",
+          "to": "now"
+        },
+        "refresh": "30s"
+      }
+    }
+
+---
+# CronJob for regular monitoring reports
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: kcl-test-monitoring
+  namespace: testkube
+spec:
+  schedule: "0 9 * * *"  # Daily at 9 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: testkube-tests
+          containers:
+          - name: monitor
+            image: alpine:latest
+            command: ["/bin/bash"]
+            args: ["/scripts/monitor.sh"]
+            
+            env:
+            - name: SLACK_WEBHOOK_URL
+              value: "https://hooks.slack.com/your-webhook"  # Update with your webhook
+            
+            volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+          
+          volumes:
+          - name: scripts
+            configMap:
+              name: testkube-deployment-scripts
+              defaultMode: 0755
+          
+          restartPolicy: OnFailure
+
+---
+# Alerting rules (for Prometheus Operator)
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: kcl-testkube-alerts
+  namespace: testkube
+spec:
+  groups:
+  - name: kcl-testkube
+    rules:
+    - alert: KCLTestFailure
+      expr: increase(testkube_test_executions_total{status="failed",test_name=~"kcl-.*"}[30m]) > 0
+      for: 5m
+      labels:
+        severity: warning
+        component: kcl-tests
+      annotations:
+        summary: "KCL test {{ $labels.test_name }} has failed"
+        description: "The KCL test {{ $labels.test_name }} has failed in the last 30 minutes"
+    
+    - alert: KCLTestSuiteFailure
+      expr: increase(testkube_test_executions_total{status="failed",test_name="kcl-crossplane-complete-suite"}[1h]) > 0
+      for: 10m
+      labels:
+        severity: critical
+        component: kcl-tests
+      annotations:
+        summary: "KCL test suite has failed"
+        description: "The complete KCL test suite has failed, indicating potential issues with KCL Crossplane functions"
+    
+    - alert: KCLTestNotExecuted
+      expr: time() - testkube_test_last_execution_time{test_name=~"kcl-.*"} > 86400
+      for: 1h
+      labels:
+        severity: warning
+        component: kcl-tests
+      annotations:
+        summary: "KCL test {{ $labels.test_name }} hasn't run in 24 hours"
+        description: "The KCL test {{ $labels.test_name }} hasn't been executed in the last 24 hours"

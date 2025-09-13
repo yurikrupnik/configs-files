@@ -1,0 +1,380 @@
+# Complete Testkube Setup for Multi-App Environment
+---
+# 1. Convert your Nu shell tests to Testkube
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: kcl-nu-integration-tests
+  namespace: testkube
+spec:
+  type: "shell/test"
+  content:
+    type: git
+    repository:
+      type: git
+      uri: https://github.com/your-repo/kcl-functions
+      branch: main
+      path: scripts/kcl/mod1
+  executionRequest:
+    command: ["nu"]
+    args: ["integration-test.nu"]
+    variables:
+      TEST_ENV: "staging"
+    jobTemplate:
+      spec:
+        template:
+          spec:
+            containers:
+            - name: nu-shell
+              image: nushell/nu:latest
+              resources:
+                requests:
+                  memory: "64Mi"
+                  cpu: "50m"
+
+---
+# 2. Web Application E2E Tests
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: webapp-e2e
+  namespace: testkube
+spec:
+  type: "playwright/project"
+  content:
+    type: git
+    repository:
+      type: git
+      uri: https://github.com/your-repo/webapp
+      branch: main
+      path: e2e-tests
+  executionRequest:
+    variables:
+      BASE_URL: "https://staging.yourapp.com"
+      HEADLESS: "true"
+
+---
+# 3. API Integration Tests
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: api-integration
+  namespace: testkube
+spec:
+  type: "postman/collection"
+  content:
+    type: string
+    data: |
+      {
+        "info": {"name": "API Integration Tests"},
+        "item": [
+          {
+            "name": "User Authentication",
+            "request": {
+              "method": "POST",
+              "url": "{{API_URL}}/auth/login",
+              "body": {
+                "mode": "raw",
+                "raw": "{\"email\":\"test@example.com\",\"password\":\"test123\"}"
+              }
+            },
+            "test": "pm.test('Login successful', () => pm.response.to.have.status(200))"
+          },
+          {
+            "name": "CRUD Operations",
+            "request": {
+              "method": "GET",
+              "url": "{{API_URL}}/api/users/me"
+            },
+            "test": "pm.test('User data returned', () => pm.response.to.have.status(200))"
+          }
+        ]
+      }
+  executionRequest:
+    variables:
+      API_URL: "https://api.staging.yourapp.com"
+
+---
+# 4. Database Health Checks
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: database-health
+  namespace: testkube
+spec:
+  type: "k6/script"
+  content:
+    type: string
+    data: |
+      import sql from 'k6/x/sql';
+      import { check } from 'k6';
+      
+      const db = sql.open('postgres', __ENV.DB_URL);
+      
+      export default function() {
+        // Connection test
+        let result = sql.query(db, 'SELECT NOW() as current_time');
+        check(result, {
+          'db connection works': (r) => r.length > 0,
+        });
+        
+        // Performance test
+        let start = Date.now();
+        result = sql.query(db, 'SELECT COUNT(*) FROM users');
+        let duration = Date.now() - start;
+        
+        check(duration, {
+          'query performance ok': (d) => d < 1000, // < 1 second
+        });
+        
+        // Data integrity
+        result = sql.query(db, `
+          SELECT table_name 
+          FROM information_schema.tables 
+          WHERE table_schema = 'public'
+        `);
+        check(result, {
+          'required tables exist': (r) => r.length >= 5,
+        });
+      }
+  executionRequest:
+    variables:
+      DB_URL: "postgres://user:pass@postgres:5432/app"
+
+---
+# 5. Infrastructure Compliance Tests
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: infrastructure-compliance
+  namespace: testkube
+spec:
+  type: "shell/test"
+  content:
+    type: string
+    data: |
+      #!/bin/bash
+      
+      echo "Testing Kubernetes cluster compliance..."
+      
+      # Check security policies
+      kubectl get networkpolicies --all-namespaces
+      if [ $? -ne 0 ]; then
+        echo "FAIL: No network policies found"
+        exit 1
+      fi
+      
+      # Check resource limits
+      kubectl get limitranges --all-namespaces
+      if [ $? -ne 0 ]; then
+        echo "FAIL: No resource limits configured"
+        exit 1
+      fi
+      
+      # Test your KCL function specifically
+      nu /tests/integration-test.nu
+      if [ $? -ne 0 ]; then
+        echo "FAIL: KCL function tests failed"
+        exit 1
+      fi
+      
+      echo "PASS: All compliance checks passed"
+
+---
+# 6. Performance Load Testing
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: load-testing
+  namespace: testkube
+spec:
+  type: "k6/script"
+  content:
+    type: string
+    data: |
+      import http from 'k6/http';
+      import { check, sleep } from 'k6';
+      
+      export let options = {
+        stages: [
+          { duration: '2m', target: 10 },   // Ramp up
+          { duration: '5m', target: 100 },  // Load test
+          { duration: '2m', target: 0 },    // Ramp down
+        ],
+        thresholds: {
+          http_req_duration: ['p(95)<500'], // 95% under 500ms
+          http_req_failed: ['rate<0.1'],    // Error rate under 10%
+        },
+      };
+      
+      export default function() {
+        // Test main application
+        let response = http.get(__ENV.APP_URL);
+        check(response, {
+          'status is 200': (r) => r.status === 200,
+          'response time OK': (r) => r.timings.duration < 1000,
+        });
+        
+        // Test API endpoints
+        response = http.get(__ENV.API_URL + '/health');
+        check(response, {
+          'API health OK': (r) => r.status === 200,
+        });
+        
+        sleep(1);
+      }
+  executionRequest:
+    variables:
+      APP_URL: "https://yourapp.com"
+      API_URL: "https://api.yourapp.com"
+
+---
+# 7. Security Testing
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: security-tests
+  namespace: testkube
+spec:
+  type: "shell/test"
+  content:
+    type: string
+    data: |
+      #!/bin/bash
+      
+      echo "Running security tests..."
+      
+      # Test for common vulnerabilities
+      echo "Testing SQL injection protection..."
+      response=$(curl -s -o /dev/null -w "%{http_code}" \
+        "${API_URL}/users?id=1' OR '1'='1")
+      
+      if [ "$response" -eq 200 ]; then
+        echo "SECURITY RISK: Possible SQL injection vulnerability"
+        exit 1
+      fi
+      
+      # Test authentication bypass
+      echo "Testing authentication bypass..."
+      response=$(curl -s -o /dev/null -w "%{http_code}" \
+        "${API_URL}/admin" -H "Authorization: Bearer invalid")
+      
+      if [ "$response" -eq 200 ]; then
+        echo "SECURITY RISK: Authentication bypass detected"
+        exit 1
+      fi
+      
+      # Test HTTPS enforcement
+      echo "Testing HTTPS enforcement..."
+      response=$(curl -s -o /dev/null -w "%{http_code}" \
+        "http://yourapp.com")
+      
+      if [ "$response" -ne 301 ] && [ "$response" -ne 302 ]; then
+        echo "SECURITY RISK: HTTPS not enforced"
+        exit 1
+      fi
+      
+      echo "Security tests passed"
+  executionRequest:
+    variables:
+      API_URL: "https://api.yourapp.com"
+
+---
+# 8. Master Test Suite
+apiVersion: tests.testkube.io/v3
+kind: TestSuite
+metadata:
+  name: complete-application-suite
+  namespace: testkube
+spec:
+  description: "Complete testing pipeline for all applications"
+  schedule: "0 3 * * *"  # Daily at 3 AM
+  
+  # Pre-execution setup
+  before:
+  - execute:
+    - test: environment-setup
+  
+  steps:
+  # Phase 1: Infrastructure & Security (Critical - must pass)
+  - stopOnFailure: true
+    execute:
+    - test: kcl-nu-integration-tests
+    - test: infrastructure-compliance
+    - test: security-tests
+      delay: 30s
+  
+  # Phase 2: Core Application Tests (Parallel)
+  - stopOnFailure: false
+    execute:
+    - test: database-health
+    - test: api-integration
+      delay: 10s
+  
+  # Phase 3: End-to-End Tests
+  - stopOnFailure: false
+    execute:
+    - test: webapp-e2e
+      delay: 60s
+  
+  # Phase 4: Performance Tests (Only if others pass)
+  - stopOnFailure: false
+    execute:
+    - test: load-testing
+      delay: 120s
+  
+  # Post-execution cleanup
+  after:
+  - execute:
+    - test: cleanup-test-data
+  
+  # Notifications
+  executionRequest:
+    webhooks:
+    - uri: https://hooks.slack.com/your-webhook
+      headers:
+        Content-Type: "application/json"
+      template: |
+        {
+          "text": "Test Suite {{ .TestSuite.Name }} {{ .Execution.ExecutionResult.Status }}",
+          "attachments": [{
+            "color": "{{ if eq .Execution.ExecutionResult.Status \"passed\" }}good{{ else }}danger{{ end }}",
+            "fields": [
+              {"title": "Duration", "value": "{{ .Execution.Duration }}", "short": true},
+              {"title": "Tests", "value": "{{ len .Execution.Steps }}", "short": true}
+            ]
+          }]
+        }
+
+---
+# 9. Monitoring & Alerting Integration
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: monitoring-integration
+  namespace: testkube
+spec:
+  type: "curl/test"
+  content:
+    type: string
+    data: |
+      #!/bin/bash
+      
+      # Send metrics to monitoring system
+      curl -X POST ${METRICS_ENDPOINT}/api/v1/metrics \
+        -H "Content-Type: application/json" \
+        -d '{
+          "metric": "testkube.test.execution",
+          "value": 1,
+          "tags": {
+            "test": "'$TEST_NAME'",
+            "status": "completed",
+            "environment": "'$ENVIRONMENT'"
+          }
+        }'
+      
+      echo "Metrics sent successfully"
+  executionRequest:
+    variables:
+      METRICS_ENDPOINT: "https://monitoring.yourapp.com"
+      ENVIRONMENT: "staging"

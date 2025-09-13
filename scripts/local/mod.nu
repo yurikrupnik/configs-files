@@ -1,5 +1,5 @@
 use inc.nu *
-use cluster.nu *
+#use cluster.nu *
 
 export-env {
     $env.NU_MODULES_DIR = ($nu.default-config-dir | path join "scripts")
@@ -40,12 +40,22 @@ def create_local_cluster [ --name(-n): string = ""] {
 }
 
 # Create (idempotent): warn if exists
-export def main [
+export def "main" [
   --name(-n): string = ""
 ] {
   let name = (cluster-name --name $name)
   create_local_cluster --name $name
-  main install-flux
+
+  dependecies_install
+}
+
+def "dependecies_install" [] {
+    main install-flux
+    (
+        helm install crossplane
+        --namespace crossplane-system
+        --create-namespace crossplane-stable/crossplane
+    )
 }
 
 # Delete (idempotent): warn if missing
@@ -77,25 +87,35 @@ export def "main list" [
   # }
 }
 
+def flux_cli [] {
+     # Check if flux CLI is installed
+      let flux_check = (flux --version | complete)
+      if $flux_check.exit_code != 0 {
+        print "❌ Flux CLI not found. Installing via brew..."
+        brew install fluxcd/tap/flux
+      }
+
+      # Install FluxCD in the cluster
+      print "📦 Installing FluxCD components in cluster..."
+      flux install
+}
+
+def flux_github [] {
+     # Check if flux CLI is installed
+     print "📦 Installing FluxCD components in cluster with github..."
+}
+
 # Install FluxCD itself
 export def "main install-flux" [] {
   print "🚀 Installing FluxCD..."
-  
-  # Check if flux CLI is installed
-  let flux_check = (flux --version | complete)
-  if $flux_check.exit_code != 0 {
-    print "❌ Flux CLI not found. Installing via brew..."
-    brew install fluxcd/tap/flux
-  }
-  
-  # Install FluxCD in the cluster
-  print "📦 Installing FluxCD components in cluster..."
-  flux install
-  
+
+  # flux_cli
+  flux_github
+
   # Wait for flux-system namespace and pods to be ready
   print "⏳ Waiting for FluxCD to be ready..."
   kubectl wait --for=condition=ready pod -l app.kubernetes.io/part-of=flux -n flux-system --timeout=300s
-  
+
   print "✅ FluxCD installation complete!"
 }
 
@@ -105,12 +125,12 @@ def flux_ready [] {
   if $flux_ns.exit_code != 0 {
     return false
   }
-  
+
   let flux_pods = (kubectl get pods -n flux-system --no-headers | complete)
   if $flux_pods.exit_code != 0 {
     return false
   }
-  
+
   return true
 }
 
@@ -120,7 +140,7 @@ export def "main install-deps" [
   --all(-a)        # Install all dependencies
 ] {
   let available_deps = ["keda", "prometheus", "chaos", "loki", "external-secrets", "crossplane"]
-  
+
   let deps_to_install = if $all {
     $available_deps
   } else if ($deps | is-empty) {
@@ -130,7 +150,7 @@ export def "main install-deps" [
   } else {
     $deps
   }
-  
+
   # Verify valid dependencies
   let invalid_deps = ($deps_to_install | where {|dep| $dep not-in $available_deps})
   if not ($invalid_deps | is-empty) {
@@ -145,18 +165,18 @@ export def "main install-deps" [
     print "Run 'main install-flux' first to install FluxCD."
     return
   }
-  
+
   print "🔄 Installing FluxCD dependencies..."
-  
+
   # Install repositories first
   install_helm_repositories
-  
+
   # Install each dependency
   $deps_to_install | each { |dep|
     print $"📦 Installing ($dep)..."
     install_dependency $dep
   }
-  
+
   print "✅ Dependencies installation initiated. Check with 'kubectl get hr -n flux-system'"
 }
 
@@ -206,14 +226,14 @@ def install_dependency [dep: string] {
 }
 
 # Check status of FluxCD dependencies
-export def "main deps-status" [] {
+export def "main deps-status 1" [] {
   print "📊 FluxCD Dependencies Status:"
   print "\n🏪 Helm Repositories:"
   kubectl get helmrepository -n flux-system -o wide
-  
+
   print "\n🚀 Helm Releases:"
   kubectl get helmrelease -n flux-system -o wide
-  
+
   print "\n📈 Resource Status:"
   let namespaces = ["keda-system", "monitoring", "chaos-system", "external-secrets-system", "crossplane-system"]
   $namespaces | each { |ns|
@@ -231,7 +251,7 @@ export def "main remove-deps" [
   --all(-a)        # Remove all dependencies
 ] {
   let available_deps = ["keda", "prometheus", "chaos", "loki", "external-secrets", "crossplane"]
-  
+
   let deps_to_remove = if $all {
     $available_deps
   } else if ($deps | is-empty) {
@@ -243,7 +263,7 @@ export def "main remove-deps" [
   }
 
   print "🗑️  Removing FluxCD dependencies..."
-  
+
   $deps_to_remove | each { |dep|
     print $"❌ Removing ($dep)..."
     kubectl delete helmrelease $dep -n flux-system --ignore-not-found=true

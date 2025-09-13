@@ -16,10 +16,6 @@ $python\
 $rust\
 $lua\
 $fill\
-#$battery\
-#$buf\
-#$env_var\
-#$deno\
 $cmd_duration $time\
 $kubernetes $namespace\
 $nix_shell\
@@ -103,13 +99,13 @@ disabled = false
 disabled = false
 
 [nodejs]
-disabled = true
+disabled = false
 
 [bun]
 disabled = false
 
 [golang]
-disabled = true
+disabled = false
 
 [dotnet]
 disabled = true

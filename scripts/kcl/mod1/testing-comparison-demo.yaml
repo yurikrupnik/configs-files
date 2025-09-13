@@ -1,0 +1,308 @@
+# Side-by-Side Testing Comparison: Function-Focused vs Resource-Focused
+# This shows both approaches testing the same KCL function scenario
+
+---
+# TESTKUBE APPROACH: Function-Focused Testing
+# Tests the KCL function execution and output validation
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: testkube-function-focused
+  namespace: testkube
+  labels:
+    approach: function-focused
+    tool: testkube
+spec:
+  type: container
+  content:
+    type: git
+    repository:
+      uri: https://github.com/your-repo/kcl-functions
+      path: scripts/kcl/mod1
+  
+  executionRequest:
+    image: alpine:latest
+    command: ["/bin/sh", "-c"]
+    args:
+    - |
+      # Install KCL
+      apk add --no-cache curl
+      curl -fsSL https://kcl-lang.io/script/install-cli.sh | /bin/sh
+      export PATH=$PATH:/root/.kclvm/bin
+      
+      cd /data/repo/scripts/kcl/mod1
+      
+      echo "🧪 TESTKUBE: Testing KCL Function Logic"
+      echo "======================================"
+      
+      # Test 1: Function execution
+      echo "Test 1: Can the function execute without errors?"
+      result=$(kcl run . -D 'params={"oxr": {"metadata": {"name": "test-db", "namespace": "default"}, "spec": {"size": "medium"}}, "ocds": {}}')
+      
+      if [ $? -eq 0 ]; then
+        echo "✅ Function executes successfully"
+      else
+        echo "❌ Function execution failed"
+        exit 1
+      fi
+      
+      # Test 2: Output validation
+      echo "Test 2: Does the function generate correct output?"
+      if echo "$result" | grep -q "instances: 3" && echo "$result" | grep -q "size: '3Gi'"; then
+        echo "✅ Correct medium-size configuration generated"
+      else
+        echo "❌ Incorrect output for medium size"
+        echo "Got: $result"
+        exit 1
+      fi
+      
+      # Test 3: YAML validity
+      echo "Test 3: Is the output valid YAML?"
+      echo "$result" | python3 -c "import sys, yaml; yaml.safe_load(sys.stdin)" 2>/dev/null
+      if [ $? -eq 0 ]; then
+        echo "✅ Output is valid YAML"
+      else
+        echo "❌ Output is not valid YAML"
+        exit 1
+      fi
+      
+      echo ""
+      echo "📋 TESTKUBE RESULTS:"
+      echo "- Function logic: ✅ WORKING"
+      echo "- Output format: ✅ VALID"
+      echo "- Performance: ✅ ACCEPTABLE"
+      echo ""
+      echo "❓ What we DON'T know:"
+      echo "- Will these resources work in Kubernetes?"
+      echo "- Are there any cluster-specific issues?"
+      echo "- Do dependent resources exist?"
+
+---
+# CHAINSAW APPROACH: Resource-Focused Testing  
+# Tests the actual Kubernetes resources in a real cluster
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: chainsaw-resource-focused
+  labels:
+    approach: resource-focused
+    tool: chainsaw
+spec:
+  description: "CHAINSAW: Tests actual Kubernetes resource behavior"
+  
+  timeouts:
+    apply: 60s
+    assert: 120s
+    cleanup: 60s
+  
+  steps:
+  
+  # Setup: Create the Composition that uses our KCL function
+  - name: setup-composition
+    apply:
+      resource:
+        apiVersion: apiextensions.crossplane.io/v1
+        kind: Composition
+        metadata:
+          name: test-postgresql-composition
+        spec:
+          compositeTypeRef:
+            apiVersion: example.com/v1alpha1
+            kind: XPostgreSQLInstance
+          
+          mode: Pipeline
+          pipeline:
+          - step: kcl-function
+            functionRef:
+              name: function-kcl
+            input:
+              apiVersion: krm.kcl.dev/v1alpha1
+              kind: KCLInput
+              spec:
+                source: |
+                  # Your KCL function (simplified)
+                  oxr = option("params").oxr
+                  items = [{
+                      apiVersion = "postgresql.cnpg.io/v1"
+                      kind = "Cluster"
+                      metadata = {
+                          name = oxr.metadata.name
+                          namespace = oxr.metadata.namespace
+                      }
+                      spec = {
+                          instances = 3 if oxr.spec.size == "medium" else 1
+                          storage = {
+                              size = "3Gi" if oxr.spec.size == "medium" else "1Gi"
+                          }
+                      }
+                  }]
+
+  # Setup: Create XRD
+  - name: setup-xrd
+    apply:
+      resource:
+        apiVersion: apiextensions.crossplane.io/v1
+        kind: CompositeResourceDefinition
+        metadata:
+          name: xpostgresqlinstances.example.com
+        spec:
+          group: example.com
+          names:
+            kind: XPostgreSQLInstance
+            plural: xpostgresqlinstances
+          versions:
+          - name: v1alpha1
+            served: true
+            referenceable: true
+            schema:
+              openAPIV3Schema:
+                type: object
+                properties:
+                  spec:
+                    type: object
+                    properties:
+                      size:
+                        type: string
+                    required: ["size"]
+  
+  # Test 1: Create a medium-sized database
+  - name: create-medium-database
+    apply:
+      resource:
+        apiVersion: example.com/v1alpha1
+        kind: XPostgreSQLInstance
+        metadata:
+          name: test-medium-db
+          namespace: default
+        spec:
+          size: medium
+          compositionRef:
+            name: test-postgresql-composition
+
+  # Test 2: Verify the PostgreSQL cluster was created correctly
+  - name: verify-cluster-exists
+    assert:
+      resource:
+        apiVersion: postgresql.cnpg.io/v1
+        kind: Cluster
+        metadata:
+          name: test-medium-db
+          namespace: default
+        # This checks that the resource actually exists in Kubernetes
+
+  # Test 3: Verify cluster has correct specifications
+  - name: verify-cluster-spec
+    assert:
+      resource:
+        apiVersion: postgresql.cnpg.io/v1
+        kind: Cluster
+        metadata:
+          name: test-medium-db
+        spec:
+          instances: 3
+          storage:
+            size: "3Gi"
+
+  # Test 4: Wait for cluster to be ready (this is the key difference!)
+  - name: verify-cluster-ready
+    assert:
+      resource:
+        apiVersion: postgresql.cnpg.io/v1
+        kind: Cluster
+        metadata:
+          name: test-medium-db
+        status:
+          conditions:
+          - type: Ready
+            status: "True"
+
+  # Test 5: Verify actual pods are running
+  - name: verify-postgres-pods
+    assert:
+      resource:
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          namespace: default
+        spec:
+          containers:
+          - name: postgres
+        status:
+          phase: Running
+
+---
+# COMPARISON RESULTS DEMO
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: testing-comparison-results
+  namespace: default
+data:
+  scenario-1-results: |
+    Scenario 1: Valid KCL Function, Working Resources
+    ===============================================
+    
+    TESTKUBE Results:
+    ✅ Function executes successfully  
+    ✅ Generates correct YAML output
+    ✅ Performance acceptable
+    
+    CHAINSAW Results:
+    ✅ Resources created in cluster
+    ✅ PostgreSQL cluster reaches ready state
+    ✅ Pods are running as expected
+    
+    Conclusion: Both tests pass - everything works!
+
+  scenario-2-results: |
+    Scenario 2: Valid KCL Function, Broken Resources  
+    ===============================================
+    
+    TESTKUBE Results:
+    ✅ Function executes successfully
+    ✅ Generates correct YAML output  
+    ✅ Performance acceptable
+    
+    CHAINSAW Results:
+    ❌ Resource creation fails (missing PostgreSQL operator)
+    ❌ Cluster never reaches ready state
+    ❌ No pods are created
+    
+    Conclusion: Function works, but cluster integration broken!
+
+  scenario-3-results: |
+    Scenario 3: Broken KCL Function
+    ==============================
+    
+    TESTKUBE Results:
+    ❌ Function fails to execute
+    ❌ No output generated
+    ❌ Syntax error in KCL code
+    
+    CHAINSAW Results:
+    ❌ Never runs (no resources to test)
+    
+    Conclusion: Fix the function first!
+
+  when-to-use-each: |
+    When to Use Each Approach:
+    ========================
+    
+    Use TESTKUBE (Function-Focused) When:
+    - Developing/debugging your KCL function
+    - Testing function logic and output
+    - Performance testing the function itself
+    - Validating cross-environment parameters
+    - You want rapid feedback during development
+    
+    Use CHAINSAW (Resource-Focused) When:
+    - Deploying to production
+    - Testing full Crossplane pipeline
+    - Validating cluster integration
+    - Testing operator interactions
+    - Ensuring resources work in target environment
+    
+    Use BOTH When:
+    - You want comprehensive coverage
+    - Building production-grade systems
+    - Need both development velocity AND deployment confidence

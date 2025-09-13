@@ -1,0 +1,12 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: example-test
+spec:
+  steps:
+  - name: step-1
+    try:
+    - apply:
+        file: example-xr.yaml
+    - assert:
+        file: expected-result.yaml

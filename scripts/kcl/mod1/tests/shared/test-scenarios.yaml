@@ -1,0 +1,55 @@
+# Shared Test Scenarios for KCL PostgreSQL Function
+# Used by both local and cluster tests
+
+scenarios:
+  basic:
+    - name: "dev-postgres-small"
+      size: "small"
+      expected:
+        instances: 1
+        storage: "1Gi"
+    - name: "staging-postgres-medium" 
+      size: "medium"
+      expected:
+        instances: 3
+        storage: "3Gi"
+    - name: "prod-postgres-large"
+      size: "large"
+      expected:
+        instances: 6
+        storage: "6Gi"
+
+  edge_cases:
+    - name: "test-with-special-chars"
+      size: "small"
+      expected:
+        instances: 1
+        storage: "1Gi"
+    - name: "very-long-name-that-tests-kubernetes-naming-limits"
+      size: "medium"
+      expected:
+        instances: 3
+        storage: "3Gi"
+
+  error_scenarios:
+    - name: "invalid-size-test"
+      size: "invalid"
+      expected_error: true
+
+namespaces:
+  - "default"
+  - "production" 
+  - "staging"
+  - "development"
+
+validation_patterns:
+  cluster:
+    api_version: "postgresql.cnpg.io/v1"
+    kind: "Cluster"
+    required_annotations:
+      - "krm.kcl.dev/composition-resource-name"
+  secret:
+    api_version: "kubernetes.m.crossplane.io/v1alpha1"
+    kind: "Object"
+    required_annotations:
+      - "krm.kcl.dev/composition-resource-name"

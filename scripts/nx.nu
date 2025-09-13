@@ -2,7 +2,7 @@ use kc-cluster.nu
 # use setup-shell.nu
 use app-management.nu
 
-export def main [] {
+export def main [--target] {
     #kind create cluster
 
     # bun nx run-many -t {arg} --parallel --max-parallel=16 --prod
@@ -12,7 +12,7 @@ export def main [] {
     let cpus = (sys cpu | length)
     print $cpus
     print $cpus
-    # bun nx run-many -t {arg} --parallel --max-parallel=$cpus --prod
+    bun nx run-many -t {arg} --parallel --max-parallel=$cpus --prod
     #kc-cluster
     # cluster-create
   #  tilt up

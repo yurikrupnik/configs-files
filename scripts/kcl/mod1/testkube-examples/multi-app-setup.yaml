@@ -1,0 +1,242 @@
+# Testkube Multi-Application Testing Setup
+---
+# 1. Frontend Application Tests
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: frontend-e2e-tests
+  namespace: testkube
+  labels:
+    app: frontend
+    test-type: e2e
+spec:
+  type: "playwright/project"
+  content:
+    type: git
+    repository:
+      type: git
+      uri: https://github.com/your-repo/frontend-app
+      branch: main
+      path: tests/e2e
+  executionRequest:
+    schedule: "0 4 * * *"  # Daily at 4 AM
+    variables:
+      BASE_URL: "https://staging.yourapp.com"
+      BROWSER: "chromium"
+
+---
+# 2. Backend API Tests
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: backend-api-tests
+  namespace: testkube
+  labels:
+    app: backend
+    test-type: api
+spec:
+  type: "postman/collection"
+  content:
+    type: string
+    data: |
+      {
+        "info": {"name": "Backend API Tests"},
+        "item": [
+          {
+            "name": "Health Check",
+            "request": {
+              "method": "GET",
+              "url": "{{API_URL}}/health"
+            },
+            "test": "pm.test('Status is 200', () => pm.response.to.have.status(200))"
+          },
+          {
+            "name": "Create Resource",
+            "request": {
+              "method": "POST",
+              "url": "{{API_URL}}/api/resources",
+              "body": {"mode": "raw", "raw": "{\"name\":\"test\"}"}
+            }
+          }
+        ]
+      }
+  executionRequest:
+    variables:
+      API_URL: "https://api.staging.yourapp.com"
+
+---
+# 3. Database Tests
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: database-integration-tests
+  namespace: testkube
+  labels:
+    app: database
+    test-type: integration
+spec:
+  type: "k6/script"
+  content:
+    type: string
+    data: |
+      import sql from 'k6/x/sql';
+      
+      const db = sql.open('postgres', __ENV.DB_CONNECTION_STRING);
+      
+      export default function() {
+        // Test database connectivity
+        let result = sql.query(db, 'SELECT 1 as test');
+        check(result, {
+          'database connection works': (r) => r.length === 1,
+        });
+        
+        // Test table exists
+        result = sql.query(db, 'SELECT COUNT(*) FROM users');
+        check(result, {
+          'users table accessible': (r) => r[0].count >= 0,
+        });
+      }
+  executionRequest:
+    variables:
+      DB_CONNECTION_STRING: "postgres://user:pass@db:5432/testdb"
+
+---
+# 4. Infrastructure Tests (Your KCL Function)
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: infrastructure-kcl-tests
+  namespace: testkube
+  labels:
+    app: infrastructure
+    test-type: infrastructure
+spec:
+  type: "artillery/test"
+  content:
+    type: git
+    repository:
+      type: git
+      uri: https://github.com/your-repo/infrastructure
+      branch: main
+      path: kcl/tests
+  executionRequest:
+    variables:
+      CROSSPLANE_ENDPOINT: "https://crossplane.cluster.local"
+
+---
+# 5. Security Tests
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: security-scan-tests
+  namespace: testkube
+  labels:
+    app: security
+    test-type: security
+spec:
+  type: "curl/test"
+  content:
+    type: string
+    data: |
+      #!/bin/bash
+      
+      # Test for common vulnerabilities
+      echo "Running security scans..."
+      
+      # Check for open ports
+      nmap -p- localhost
+      
+      # Check SSL/TLS configuration
+      curl -I https://yourapp.com
+      
+      # Test authentication
+      curl -X POST https://api.yourapp.com/auth/login \
+        -d '{"username":"admin","password":"admin"}' \
+        -H "Content-Type: application/json"
+      
+      if [ $? -eq 0 ]; then
+        echo "SECURITY ISSUE: Default credentials work!"
+        exit 1
+      fi
+      
+      echo "Security tests passed"
+
+---
+# 6. Performance Tests
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: performance-load-tests
+  namespace: testkube
+  labels:
+    app: performance
+    test-type: load
+spec:
+  type: "k6/script"
+  content:
+    type: string
+    data: |
+      import http from 'k6/http';
+      import { check, sleep } from 'k6';
+      
+      export let options = {
+        stages: [
+          { duration: '5m', target: 10 },
+          { duration: '10m', target: 50 },
+          { duration: '5m', target: 0 },
+        ],
+      };
+      
+      export default function() {
+        let response = http.get(__ENV.TARGET_URL);
+        check(response, {
+          'status is 200': (r) => r.status === 200,
+          'response time < 500ms': (r) => r.timings.duration < 500,
+        });
+        sleep(1);
+      }
+  executionRequest:
+    variables:
+      TARGET_URL: "https://yourapp.com"
+
+---
+# 7. Test Suite Orchestrating Everything
+apiVersion: tests.testkube.io/v3
+kind: TestSuite
+metadata:
+  name: full-application-suite
+  namespace: testkube
+spec:
+  description: "Complete application testing pipeline"
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  steps:
+  # Step 1: Infrastructure tests
+  - stopOnFailure: true
+    execute:
+    - test: infrastructure-kcl-tests
+      delay: 30s
+  
+  # Step 2: Backend and Database tests (parallel)
+  - stopOnFailure: false
+    execute:
+    - test: backend-api-tests
+    - test: database-integration-tests
+      delay: 10s
+  
+  # Step 3: Frontend tests (after backend is validated)
+  - stopOnFailure: false
+    execute:
+    - test: frontend-e2e-tests
+      delay: 60s
+  
+  # Step 4: Security and Performance (parallel)
+  - stopOnFailure: false
+    execute:
+    - test: security-scan-tests
+    - test: performance-load-tests
+      delay: 30s
+  
+  # Step 5: Final validation
+  after:
+  - execute:
+    - test: final-smoke-test

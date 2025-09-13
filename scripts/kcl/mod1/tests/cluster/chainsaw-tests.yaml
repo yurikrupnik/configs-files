@@ -1,0 +1,211 @@
+# Chainsaw Tests for KCL PostgreSQL Function
+# Organized cluster validation tests
+
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: kcl-function-basic-test
+  namespace: chainsaw
+spec:
+  description: "Basic KCL function resource validation"
+  
+  timeouts:
+    apply: 30s
+    assert: 60s
+    cleanup: 30s
+  
+  steps:
+  # Test small configuration
+  - name: test-small-configuration
+    try:
+    - apply:
+        resource:
+          apiVersion: example.com/v1alpha1
+          kind: XPostgreSQLInstance
+          metadata:
+            name: test-small-db
+            namespace: default
+          spec:
+            size: small
+    - assert:
+        resource:
+          apiVersion: postgresql.cnpg.io/v1
+          kind: Cluster
+          metadata:
+            name: test-small-db
+          spec:
+            instances: 1
+            storage:
+              size: "1Gi"
+
+  # Test medium configuration
+  - name: test-medium-configuration
+    try:
+    - apply:
+        resource:
+          apiVersion: example.com/v1alpha1
+          kind: XPostgreSQLInstance
+          metadata:
+            name: test-medium-db
+            namespace: default
+          spec:
+            size: medium
+    - assert:
+        resource:
+          apiVersion: postgresql.cnpg.io/v1
+          kind: Cluster
+          metadata:
+            name: test-medium-db
+          spec:
+            instances: 3
+            storage:
+              size: "3Gi"
+
+  # Test large configuration
+  - name: test-large-configuration
+    try:
+    - apply:
+        resource:
+          apiVersion: example.com/v1alpha1
+          kind: XPostgreSQLInstance
+          metadata:
+            name: test-large-db
+            namespace: default
+          spec:
+            size: large
+    - assert:
+        resource:
+          apiVersion: postgresql.cnpg.io/v1
+          kind: Cluster
+          metadata:
+            name: test-large-db
+          spec:
+            instances: 6
+            storage:
+              size: "6Gi"
+
+---
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: kcl-function-annotation-test
+  namespace: chainsaw
+spec:
+  description: "Test KCL function annotations and metadata"
+  
+  steps:
+  - name: test-composition-annotations
+    try:
+    - apply:
+        resource:
+          apiVersion: example.com/v1alpha1
+          kind: XPostgreSQLInstance
+          metadata:
+            name: test-annotations-db
+            namespace: default
+          spec:
+            size: small
+    - assert:
+        resource:
+          apiVersion: postgresql.cnpg.io/v1
+          kind: Cluster
+          metadata:
+            name: test-annotations-db
+            annotations:
+              krm.kcl.dev/composition-resource-name: cluster
+
+---
+apiVersion: chainsaw.kyverno.io/v1alpha1  
+kind: Test
+metadata:
+  name: kcl-function-secret-test
+  namespace: chainsaw
+spec:
+  description: "Test KCL function secret object creation"
+  
+  steps:
+  - name: test-secret-object-creation
+    try:
+    - apply:
+        resource:
+          apiVersion: example.com/v1alpha1
+          kind: XPostgreSQLInstance
+          metadata:
+            name: test-secret-db
+            namespace: default
+          spec:
+            size: small
+    - assert:
+        resource:
+          apiVersion: kubernetes.m.crossplane.io/v1alpha1
+          kind: Object
+          metadata:
+            name: test-secret-db-secret
+            annotations:
+              krm.kcl.dev/composition-resource-name: sql-secret
+
+---
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: kcl-function-multi-namespace-test
+  namespace: chainsaw
+spec:
+  description: "Test KCL function across multiple namespaces"
+  
+  steps:
+  - name: create-test-namespaces
+    try:
+    - apply:
+        resource:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: kcl-test-staging
+    - apply:
+        resource:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: kcl-test-prod
+
+  - name: test-staging-namespace
+    try:
+    - apply:
+        resource:
+          apiVersion: example.com/v1alpha1
+          kind: XPostgreSQLInstance
+          metadata:
+            name: staging-db
+            namespace: kcl-test-staging
+          spec:
+            size: medium
+    - assert:
+        resource:
+          apiVersion: postgresql.cnpg.io/v1
+          kind: Cluster
+          metadata:
+            name: staging-db
+          spec:
+            instances: 3
+
+  - name: test-production-namespace
+    try:
+    - apply:
+        resource:
+          apiVersion: example.com/v1alpha1
+          kind: XPostgreSQLInstance
+          metadata:
+            name: prod-db
+            namespace: kcl-test-prod
+          spec:
+            size: large
+    - assert:
+        resource:
+          apiVersion: postgresql.cnpg.io/v1
+          kind: Cluster
+          metadata:
+            name: prod-db
+          spec:
+            instances: 6
+

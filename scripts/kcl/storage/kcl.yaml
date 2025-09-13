@@ -1,0 +1,89 @@
+kcl_options:
+  - key: config
+    value:
+      area: tel-aviv
+      primary_cloud: gcp
+      gitops: flux
+      local: true
+  - key: applications
+    value:
+      - name: crossplane
+        repo_url: "https://github.com/crossplane/crossplane"
+        path: "cluster/charts/crossplane"
+        namespace: "crossplane-system"
+        chart: "crossplane"
+        helm_repo: "https://charts.crossplane.io/stable"
+        target_revision: 1.20.x
+      - name: dapr
+        repo_url: "https://github.com/dapr/dapr"
+        namespace: "dapr-system"
+        chart: "dapr"
+        helm_repo: "https://dapr.github.io/helm-charts/"
+        target_revision: 1.15.x
+      - name: external-secrets
+        repo_url: "https://github.com/external-secrets/external-secrets"
+        namespace: "external-secrets"
+        chart: "external-secrets"
+        helm_repo: "https://charts.external-secrets.io"
+        target_revision: 0.18.x
+      - name: argo-workflows
+        repo_url: "https://argoproj.github.io/workflows/"
+        namespace: "argo-workflows"
+        chart: "argo-workflows"
+        helm_repo: "https://argoproj.github.io/argo-helm"
+        target_revision: 0.45.x
+      - name: argo-events
+        repo_url: "https://argoproj.github.io/events/"
+        namespace: "argo-events"
+        chart: "argo-events"
+        helm_repo: "https://argoproj.github.io/argo-helm"
+        target_revision: 2.4.x
+      - name: argo-rollouts
+        repo_url: "https://argoproj.github.io/rollouts/"
+        namespace: "argo-rollouts"
+        chart: "argo-rollouts"
+        helm_repo: "https://argoproj.github.io/argo-helm"
+        target_revision: 2.40.x
+      - name: velero
+        repo_url: "https://github.com/vmware-tanzu/velero"
+        namespace: "velero"
+        chart: velero
+        helm_repo: "https://vmware-tanzu.github.io/helm-charts/"
+        target_revision: 10.0.x
+      #      - name: cloudnative-pg
+      #        namespace: "cnpg-system"
+      #        chart: cloudnative-pg
+      #        helm_repo: "https://cloudnative-pg.github.io/charts"
+      #        target_revision: 0.24.x
+      - name: cert-manager
+        namespace: "cert-manager"
+        chart: cert-manager
+        helm_repo: "https://charts.jetstack.io"
+        target_revision: 1.18.x
+      - name: prometheus
+        repo_url: "https://github.com/prometheus-community/helm-charts"
+        namespace: "monitoring"
+        chart: "kube-prometheus-stack"
+        helm_repo: "https://prometheus-community.github.io/helm-charts"
+        target_revision: 75.13.x
+      - name: kyverno
+        namespace: "kyverno"
+        chart: kyverno
+        helm_repo: "https://kyverno.github.io/kyverno/"
+        target_revision: 3.4.x
+        sync_wave: 1
+      #      - name: fiber-mongo
+      #        namespace: aris
+      #        repo_url: https://github.com/yurikrupnik/fiber-mongo
+      #        path: k8s/base
+      - name: first-rust-app
+        namespace: aris
+        repo_url: https://github.com/yurikrupnik/first-rust-app
+        path: k8s/base
+        sync_wave: 3
+      #        local: true
+      - name: gitops-v2
+        namespace: gitops
+        repo_url: https://github.com/yurikrupnik/gitops-v2
+        path: cluster/second-cluster
+        sync_wave: 3

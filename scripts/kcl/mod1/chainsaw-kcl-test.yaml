@@ -1,0 +1,320 @@
+# Chainsaw Test for KCL Crossplane Function
+# This demonstrates how to test your KCL function using Chainsaw
+
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: kcl-function-resource-test
+spec:
+  description: "Test KCL Crossplane function by validating generated resources"
+  
+  # Test timeout
+  timeouts:
+    apply: 30s
+    assert: 60s
+    cleanup: 30s
+  
+  steps:
+  
+  # Step 1: Apply a Composition that uses our KCL function
+  - name: apply-composition
+    apply:
+      resource:
+        apiVersion: apiextensions.crossplane.io/v1
+        kind: Composition
+        metadata:
+          name: kcl-postgresql-composition
+          namespace: crossplane-system
+        spec:
+          compositeTypeRef:
+            apiVersion: example.com/v1alpha1
+            kind: XPostgreSQLInstance
+          
+          mode: Pipeline
+          pipeline:
+          - step: kcl-function
+            functionRef:
+              name: function-kcl
+            input:
+              apiVersion: krm.kcl.dev/v1alpha1
+              kind: KCLInput
+              spec:
+                # Your KCL function source (simplified for testing)
+                source: |
+                  oxr = option("params").oxr
+                  ocds = option("params").ocds
+                  
+                  items = [{
+                      apiVersion = "postgresql.cnpg.io/v1"
+                      kind = "Cluster"
+                      metadata = {
+                          name = oxr.metadata.name
+                          annotations = {
+                              "krm.kcl.dev/composition-resource-name" = "cluster"
+                          }
+                      }
+                      spec = {
+                          instances = 3 if oxr.spec.size == "medium" else (1 if oxr.spec.size == "small" else 6)
+                          storage = {
+                              size = "3Gi" if oxr.spec.size == "medium" else ("1Gi" if oxr.spec.size == "small" else "6Gi")
+                          }
+                      }
+                  }]
+
+  # Step 2: Create a CompositeResourceDefinition (XRD)
+  - name: apply-xrd
+    apply:
+      resource:
+        apiVersion: apiextensions.crossplane.io/v1
+        kind: CompositeResourceDefinition
+        metadata:
+          name: xpostgresqlinstances.example.com
+        spec:
+          group: example.com
+          names:
+            kind: XPostgreSQLInstance
+            plural: xpostgresqlinstances
+          versions:
+          - name: v1alpha1
+            served: true
+            referenceable: true
+            schema:
+              openAPIV3Schema:
+                type: object
+                properties:
+                  spec:
+                    type: object
+                    properties:
+                      size:
+                        type: string
+                        enum: ["small", "medium", "large"]
+                        default: "medium"
+                    required: ["size"]
+                  status:
+                    type: object
+
+  # Step 3: Wait for Composition to be ready
+  - name: wait-composition-ready
+    assert:
+      resource:
+        apiVersion: apiextensions.crossplane.io/v1
+        kind: Composition
+        metadata:
+          name: kcl-postgresql-composition
+        # Wait for the composition to exist and be processed
+
+  # Step 4: Create a Composite Resource (XR) - Small size
+  - name: create-small-xr
+    apply:
+      resource:
+        apiVersion: example.com/v1alpha1
+        kind: XPostgreSQLInstance
+        metadata:
+          name: test-small-db
+          namespace: default
+        spec:
+          size: small
+          compositionRef:
+            name: kcl-postgresql-composition
+
+  # Step 5: Verify Small PostgreSQL Cluster was created correctly
+  - name: assert-small-cluster
+    assert:
+      resource:
+        apiVersion: postgresql.cnpg.io/v1
+        kind: Cluster
+        metadata:
+          name: test-small-db
+        spec:
+          instances: 1
+          storage:
+            size: "1Gi"
+
+  # Step 6: Create a Composite Resource (XR) - Medium size  
+  - name: create-medium-xr
+    apply:
+      resource:
+        apiVersion: example.com/v1alpha1
+        kind: XPostgreSQLInstance
+        metadata:
+          name: test-medium-db
+          namespace: default
+        spec:
+          size: medium
+          compositionRef:
+            name: kcl-postgresql-composition
+
+  # Step 7: Verify Medium PostgreSQL Cluster was created correctly
+  - name: assert-medium-cluster
+    assert:
+      resource:
+        apiVersion: postgresql.cnpg.io/v1
+        kind: Cluster
+        metadata:
+          name: test-medium-db
+        spec:
+          instances: 3
+          storage:
+            size: "3Gi"
+
+  # Step 8: Create a Composite Resource (XR) - Large size
+  - name: create-large-xr
+    apply:
+      resource:
+        apiVersion: example.com/v1alpha1
+        kind: XPostgreSQLInstance
+        metadata:
+          name: test-large-db
+          namespace: default
+        spec:
+          size: large
+          compositionRef:
+            name: kcl-postgresql-composition
+
+  # Step 9: Verify Large PostgreSQL Cluster was created correctly
+  - name: assert-large-cluster
+    assert:
+      resource:
+        apiVersion: postgresql.cnpg.io/v1
+        kind: Cluster
+        metadata:
+          name: test-large-db
+        spec:
+          instances: 6
+          storage:
+            size: "6Gi"
+
+  # Step 10: Verify composition annotations are present
+  - name: assert-composition-annotations
+    assert:
+      resource:
+        apiVersion: postgresql.cnpg.io/v1
+        kind: Cluster
+        metadata:
+          name: test-small-db
+          annotations:
+            krm.kcl.dev/composition-resource-name: cluster
+
+  # Cleanup happens automatically after test completion
+
+---
+# Chainsaw Configuration (optional)
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Configuration
+metadata:
+  name: kcl-test-config
+spec:
+  # Global test timeout
+  timeouts:
+    apply: 45s
+    assert: 90s
+    cleanup: 60s
+  
+  # Cleanup configuration
+  cleanup:
+    skipDelete: false
+  
+  # Parallel execution
+  parallel: 1
+
+---
+# Additional Chainsaw test for error scenarios
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: kcl-function-error-test
+spec:
+  description: "Test KCL function error handling and edge cases"
+  
+  steps:
+  # Test invalid size parameter
+  - name: create-invalid-xr
+    apply:
+      resource:
+        apiVersion: example.com/v1alpha1
+        kind: XPostgreSQLInstance
+        metadata:
+          name: test-invalid-db
+        spec:
+          size: invalid-size
+          compositionRef:
+            name: kcl-postgresql-composition
+    
+    # Expect this to fail or create a default configuration
+    assert:
+      resource:
+        apiVersion: example.com/v1alpha1
+        kind: XPostgreSQLInstance
+        metadata:
+          name: test-invalid-db
+        # Check status for error conditions
+        status:
+          conditions:
+          - type: Synced
+            status: "False"
+
+---
+# Performance test using Chainsaw
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: kcl-function-performance-test
+spec:
+  description: "Test KCL function performance with multiple resources"
+  
+  steps:
+  # Create multiple resources quickly
+  - name: create-multiple-resources
+    apply:
+      resources:
+      - apiVersion: example.com/v1alpha1
+        kind: XPostgreSQLInstance
+        metadata:
+          name: perf-test-1
+        spec:
+          size: small
+          compositionRef:
+            name: kcl-postgresql-composition
+      
+      - apiVersion: example.com/v1alpha1
+        kind: XPostgreSQLInstance
+        metadata:
+          name: perf-test-2
+        spec:
+          size: medium
+          compositionRef:
+            name: kcl-postgresql-composition
+      
+      - apiVersion: example.com/v1alpha1
+        kind: XPostgreSQLInstance
+        metadata:
+          name: perf-test-3
+        spec:
+          size: large
+          compositionRef:
+            name: kcl-postgresql-composition
+
+  # Verify all resources were created within reasonable time
+  - name: assert-all-clusters-created
+    assert:
+      resources:
+      - apiVersion: postgresql.cnpg.io/v1
+        kind: Cluster
+        metadata:
+          name: perf-test-1
+        spec:
+          instances: 1
+      
+      - apiVersion: postgresql.cnpg.io/v1
+        kind: Cluster
+        metadata:
+          name: perf-test-2
+        spec:
+          instances: 3
+      
+      - apiVersion: postgresql.cnpg.io/v1
+        kind: Cluster
+        metadata:
+          name: perf-test-3
+        spec:
+          instances: 6

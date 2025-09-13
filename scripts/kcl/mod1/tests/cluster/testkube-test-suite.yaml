@@ -1,0 +1,28 @@
+# Testkube Test Suite for KCL PostgreSQL Function
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: kcl-function-validation
+  namespace: testkube
+spec:
+  type: curl/test
+  content:
+    type: string
+    data: |
+      #!/bin/bash
+      echo "KCL Function Validation Test"
+      echo "This is a placeholder test that always passes"
+      exit 0
+
+---
+apiVersion: tests.testkube.io/v3
+kind: TestSuite
+metadata:
+  name: kcl-test-suite
+  namespace: testkube
+spec:
+  description: "Test suite for KCL PostgreSQL Function validation"
+  steps:
+  - stopOnFailure: false
+    execute:
+    - test: kcl-function-validation

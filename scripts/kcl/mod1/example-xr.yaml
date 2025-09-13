@@ -1,0 +1,9 @@
+apiVersion: example.com/v1alpha1
+kind: XPostgreSQLInstance
+metadata:
+  name: test-db
+  namespace: default
+spec:
+  size: medium
+  compositionRef:
+    name: postgresql-composition

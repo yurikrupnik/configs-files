@@ -1,0 +1,318 @@
+# Environment Configuration for KCL Testkube Tests
+# Optimized container images and configurations
+
+---
+# Custom ConfigMap with KCL and Nu shell scripts
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kcl-test-scripts
+  namespace: testkube
+data:
+  # Convert Nu shell integration test to bash for better compatibility
+  integration-test.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "🧪 Running KCL Integration Tests (Converted from Nu shell)"
+    echo "========================================================"
+    
+    cd /data/repo/scripts/kcl/mod1
+    
+    # Function to run KCL test with validation
+    run_kcl_test() {
+      local size="$1"
+      local expected_instances="$2" 
+      local expected_storage="$3"
+      local test_name="$4"
+      
+      echo "Test: $test_name"
+      result=$(kcl run . -D "params={\"oxr\": {\"metadata\": {\"name\": \"test-$size\", \"namespace\": \"default\"}, \"spec\": {\"size\": \"$size\"}}, \"ocds\": {}}")
+      
+      if echo "$result" | grep -q "instances: $expected_instances" && echo "$result" | grep -q "size: '$expected_storage'"; then
+        echo "  ✅ PASS: $test_name"
+        return 0
+      else
+        echo "  ❌ FAIL: $test_name"
+        echo "  Expected: instances: $expected_instances, storage: $expected_storage"
+        echo "  Got: $result"
+        return 1
+      fi
+    }
+    
+    # Run size configuration tests
+    echo "Testing size configurations..."
+    run_kcl_test "small" "1" "1Gi" "Small instance configuration" || exit 1
+    run_kcl_test "medium" "3" "3Gi" "Medium instance configuration" || exit 1  
+    run_kcl_test "large" "6" "6Gi" "Large instance configuration" || exit 1
+    
+    # Test resource creation
+    echo ""
+    echo "Testing resource creation..."
+    result=$(kcl run . -D 'params={"oxr": {"metadata": {"name": "test-resources", "namespace": "default"}, "spec": {"size": "small"}}, "ocds": {}}')
+    
+    if echo "$result" | grep -q "apiVersion: postgresql.cnpg.io/v1" && echo "$result" | grep -q "kind: Cluster"; then
+      echo "  ✅ PASS: PostgreSQL cluster resource creation"
+    else
+      echo "  ❌ FAIL: PostgreSQL cluster resource creation"
+      exit 1
+    fi
+    
+    if echo "$result" | grep -q "apiVersion: kubernetes.m.crossplane.io/v1alpha1" && echo "$result" | grep -q "kind: Object"; then
+      echo "  ✅ PASS: Secret object resource creation"  
+    else
+      echo "  ❌ FAIL: Secret object resource creation"
+      exit 1
+    fi
+    
+    # Test naming and annotations
+    echo ""
+    echo "Testing naming and annotations..."
+    result=$(kcl run . -D 'params={"oxr": {"metadata": {"name": "my-database", "namespace": "production"}, "spec": {"size": "small"}}, "ocds": {}}')
+    
+    if echo "$result" | grep -q "name: my-database" && echo "$result" | grep -q "namespace: production"; then
+      echo "  ✅ PASS: Resource naming"
+    else
+      echo "  ❌ FAIL: Resource naming"
+      exit 1
+    fi
+    
+    if echo "$result" | grep -q "krm.kcl.dev/composition-resource-name: cluster" && echo "$result" | grep -q "krm.kcl.dev/composition-resource-name: sql-secret"; then
+      echo "  ✅ PASS: Composition annotations"
+    else
+      echo "  ❌ FAIL: Composition annotations"
+      exit 1
+    fi
+    
+    echo ""
+    echo "🎉 All integration tests passed!"
+    echo "================================"
+  
+  # E2E test script
+  e2e-test.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "🚀 KCL E2E Tests (Converted from Nu shell)"
+    echo "=========================================="
+    
+    cd /data/repo/scripts/kcl/mod1
+    
+    # Test scenarios
+    scenarios=(
+      "dev-postgres-small:development:small:1:1Gi"
+      "staging-postgres-medium:staging:medium:3:3Gi"  
+      "prod-postgres-large:production:large:6:6Gi"
+    )
+    
+    passed_tests=0
+    total_tests=${#scenarios[@]}
+    
+    for scenario in "${scenarios[@]}"; do
+      IFS=':' read -r name namespace size instances storage <<< "$scenario"
+      
+      echo ""
+      echo "🔬 Testing scenario: $name"
+      echo "  Parameters: name=$name, namespace=$namespace, size=$size"
+      
+      result=$(kcl run . -D "params={\"oxr\": {\"metadata\": {\"name\": \"$name\", \"namespace\": \"$namespace\"}, \"spec\": {\"size\": \"$size\"}}, \"ocds\": {}}")
+      
+      if echo "$result" | grep -q "instances: $instances" && echo "$result" | grep -q "size: '$storage'"; then
+        echo "  ✅ SUCCESS: $name scenario validated"
+        ((passed_tests++))
+      else
+        echo "  ❌ FAILED: $name scenario"
+        echo "$result"
+        exit 1
+      fi
+    done
+    
+    echo ""
+    echo "📊 E2E Test Report"
+    echo "=================="
+    echo "Total scenarios: $total_tests"
+    echo "✅ Passed: $passed_tests"
+    echo "❌ Failed: $((total_tests - passed_tests))"
+    echo ""
+    echo "🎉 All E2E tests passed! KCL function is ready for Crossplane."
+
+---
+# Custom image with KCL and tools pre-installed (Dockerfile simulation)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kcl-testkube-dockerfile
+  namespace: testkube
+data:
+  Dockerfile: |
+    FROM alpine:3.18
+    
+    # Install dependencies
+    RUN apk add --no-cache \
+        curl \
+        wget \
+        bash \
+        jq \
+        git \
+        ca-certificates \
+        && rm -rf /var/cache/apk/*
+    
+    # Install KCL
+    RUN curl -fsSL https://kcl-lang.io/script/install-cli.sh | /bin/sh \
+        && mv /root/.kclvm/bin/kcl /usr/local/bin/ \
+        && chmod +x /usr/local/bin/kcl
+    
+    # Install Nu shell (optional - for advanced scenarios)
+    RUN wget -O nu.tar.gz https://github.com/nushell/nushell/releases/download/0.86.0/nu-0.86.0-x86_64-unknown-linux-musl.tar.gz \
+        && tar -xzf nu.tar.gz \
+        && mv nu-0.86.0-x86_64-unknown-linux-musl/nu /usr/local/bin/ \
+        && chmod +x /usr/local/bin/nu \
+        && rm -rf nu.tar.gz nu-0.86.0-x86_64-unknown-linux-musl
+    
+    # Set working directory
+    WORKDIR /workspace
+    
+    # Default command
+    CMD ["/bin/bash"]
+
+---
+# Secret for Git repository access (if private repo)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: git-repo-secret
+  namespace: testkube
+  labels:
+    testkube.io/secret-type: git
+type: Opaque
+stringData:
+  # Update these with your actual Git credentials
+  username: "your-username"
+  token: "your-personal-access-token"
+  
+---
+# Environment-specific ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-environment-config
+  namespace: testkube
+data:
+  # Different environments
+  development.yaml: |
+    environment: development
+    kcl:
+      cache_dir: /tmp/kcl-cache-dev
+      log_level: debug
+    tests:
+      timeout: 300
+      parallel: false
+  
+  staging.yaml: |
+    environment: staging
+    kcl:
+      cache_dir: /tmp/kcl-cache-staging
+      log_level: info
+    tests:
+      timeout: 600
+      parallel: true
+      
+  production.yaml: |
+    environment: production
+    kcl:
+      cache_dir: /tmp/kcl-cache-prod
+      log_level: warn
+    tests:
+      timeout: 900
+      parallel: false
+
+---
+# PersistentVolume for test data caching
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kcl-test-cache
+  namespace: testkube
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+# Improved Integration test using ConfigMap scripts
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: kcl-integration-tests-v2
+  namespace: testkube
+  labels:
+    app: kcl-functions
+    test-type: integration
+    version: v2
+spec:
+  type: container
+  content:
+    type: git
+    repository:
+      type: git
+      uri: https://github.com/your-org/configs-files
+      branch: main
+      path: scripts/kcl/mod1
+      authType: basic
+      secretRef:
+        name: git-repo-secret
+  
+  executionRequest:
+    image: "alpine:3.18"
+    jobTemplate:
+      spec:
+        template:
+          spec:
+            serviceAccountName: testkube-tests
+            containers:
+            - name: kcl-integration-test
+              image: alpine:3.18
+              command: ["/bin/bash"]
+              args: ["/scripts/integration-test.sh"]
+              
+              env:
+              - name: KCL_CACHE_DIR
+                value: "/cache/kcl"
+              - name: TEST_ENVIRONMENT
+                value: "testkube-v2"
+              - name: LOG_LEVEL
+                value: "info"
+              
+              resources:
+                requests:
+                  memory: "256Mi"
+                  cpu: "100m"
+                limits:
+                  memory: "512Mi"
+                  cpu: "500m"
+              
+              volumeMounts:
+              - name: test-scripts
+                mountPath: /scripts
+              - name: test-cache
+                mountPath: /cache
+              - name: environment-config
+                mountPath: /config
+            
+            volumes:
+            - name: test-scripts
+              configMap:
+                name: kcl-test-scripts
+                defaultMode: 0755
+            - name: test-cache
+              persistentVolumeClaim:
+                claimName: kcl-test-cache
+            - name: environment-config
+              configMap:
+                name: test-environment-config
+            
+            restartPolicy: Never
+  
+  schedule: "0 8 * * *"  # Daily at 8 AM
