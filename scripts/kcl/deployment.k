@@ -14,10 +14,10 @@ schema AppConfig:
     replicas?: int = 1
     port?: int = 8080
     env?: {str: str} = {}
-    resources?: {
-        requests?: {str: str}
-        limits?: {str: str}
-    }
+    #resources?: {
+    #    requests?: {str: str}
+    #    limits?: {str: str}
+    #}
 
 # App configuration
 config: AppConfig = {

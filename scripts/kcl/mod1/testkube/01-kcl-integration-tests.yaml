@@ -15,7 +15,7 @@ spec:
     type: git
     repository:
       type: git
-      uri: https://github.com/your-org/configs-files  # Update with your repo
+      uri: https://github.com/yurikrupnik/configs-files  # Update with your repo
       branch: main
       path: scripts/kcl/mod1
   

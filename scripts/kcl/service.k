@@ -34,12 +34,12 @@ service = core.Service {
         }
     }
     spec = core.ServiceSpec {
-        type = config.serviceType
+        $type = config.serviceType
         ports = [
             core.ServicePort {
                 port = config.port
                 targetPort = config.targetPort
-                protocol = "TCP"
+                $protocol = "TCP"
             }
         ]
         selector = config.selector

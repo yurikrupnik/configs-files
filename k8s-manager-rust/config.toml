@@ -1,0 +1,33 @@
+[watcher]
+namespaces = ["default", "kube-system"]
+resource_types = ["pods", "services", "deployments", "configmaps", "secrets"]
+reconnect_interval = 5000
+
+[watcher.label_selectors]
+# Add any label selectors here
+# app = "myapp"
+
+[api]
+host = "0.0.0.0"
+port = 8080
+cors_origins = ["*"]
+websocket_path = "/ws"
+
+[tui]
+refresh_rate = 1000
+show_timestamps = true
+max_events = 1000
+theme = "dark"
+
+[data]
+storage_path = "./data"
+retention_days = 7
+batch_size = 100
+compression = true
+
+[events]
+webhook_urls = []
+# webhook_urls = ["https://webhook.example.com/k8s-events"]
+# slack_webhook = "https://hooks.slack.com/services/..."
+filter_severity = "info"
+enable_metrics = true

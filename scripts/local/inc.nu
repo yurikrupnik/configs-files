@@ -17,3 +17,10 @@ export def pa [] {
 export def security [] {
     ls
 }
+
+# Check if a kind cluster already exists
+export def cluster-exists [name: string] {
+  kind get clusters
+  | lines
+  | any { |it| $it == $name }
+}

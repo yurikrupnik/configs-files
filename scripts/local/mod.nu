@@ -21,13 +21,6 @@ export def cluster-name [
   }
 }
 
-# Check if a kind cluster already exists
-export def cluster-exists [name: string] {
-  kind get clusters
-  | lines
-  | any { |it| $it == $name }
-}
-
 def create_local_cluster [ --name(-n): string = ""] {
     let name = (cluster-name --name $name)
 

@@ -1,0 +1,37 @@
+version: '3'
+
+vars:
+  GREETING: Hello
+
+tasks:
+  default:
+    desc: Default task
+    cmds:
+      - echo "{{.GREETING}} World"
+
+  build:
+    desc: Build the application
+    cmds:
+      - cargo build
+
+  test:
+    desc: Run tests
+    cmds:
+      - cargo test
+
+  lint:
+    desc: Run linting
+    cmds:
+      - cargo clippy
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - cargo clean
+
+  dev:
+    desc: Development mode with auto-reload
+    deps: [build]
+    cmds:
+      - echo "Starting development mode..."
+      - cargo run

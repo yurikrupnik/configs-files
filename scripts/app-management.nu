@@ -195,11 +195,24 @@ def "main app port-forward" [
     --namespace: string = "default",
     --local-port: string = ""
 ] {
-    let local = if ($local_port != "") { $local_port } else { $port }
-    
+    let port_num = ($port | into int)
+    if $port_num < 1 or $port_num > 65535 {
+        error make { msg: $"Invalid port number: ($port). Port must be between 1 and 65535" }
+    }
+
+    let local = if ($local_port != "") {
+        let local_num = ($local_port | into int)
+        if $local_num < 1 or $local_num > 65535 {
+            error make { msg: $"Invalid local port number: ($local_port). Port must be between 1 and 65535" }
+        }
+        $local_port
+    } else {
+        $port
+    }
+
     print $"🌐 Port forwarding ($local):($port) for application '($name)'..."
     print "Press Ctrl+C to stop"
-    
+
     kubectl port-forward -n $namespace svc/$name $"($local):($port)"
 }
 
