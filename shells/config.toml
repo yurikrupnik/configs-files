@@ -9,7 +9,7 @@ u = 'update'
 #alias fzfp='fzf --preview="bat --style numbers --color=always {}"'
 #alias d=docker
 #alias drmi='docker rmi $(docker images -aq) -f'
-#alias dclean='docker system prune -f && docker volume prune -f'
+#alias dclean='docker system prune -f && docker volume prune -f && docker rmi $(docker images -qa) -f'
 #alias g=gcloud
 #alias pu=pulumi
 #alias p=pnpm

@@ -21,6 +21,9 @@ export STARSHIP_CONFIG=~/.config/starship/starship.toml
 # Zoxide
 eval "$(zoxide init --cmd cd zsh)"
 
+# export CARAPACE_BRIDGES='zsh,fish,bash,inshellisense' # optional
+# zstyle ':completion:*' format $'\e[2;37mCompleting %d\e[m'
+# source <(carapace _carapace)
 # # Rust
 # . "$HOME/.cargo/env"
 
@@ -49,3 +52,6 @@ setopt hist_find_no_dups
 
 autoload -Uz compinit && compinit
 zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
+
+if [ -f '/opt/homebrew/share/google-cloud-sdk/path.zsh.inc' ]; then . '/opt/homebrew/share/google-cloud-sdk/path.zsh.inc'; fi
+if [ -f '/opt/homebrew/share/google-cloud-sdk/completion.zsh.inc' ]; then . '/opt/homebrew/share/google-cloud-sdk/completion.zsh.inc'; fi

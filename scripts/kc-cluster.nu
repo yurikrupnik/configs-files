@@ -28,6 +28,7 @@ def validate-provider [provider: string] {
 # Common cluster creation logic - called by all shells
 def main [
     --cloud: string = "local"  # One of: aws, gcp, local, azure
+    #--ff-cloud: string = $PROVIDER_VALUES[0]  # One of: aws, gcp, local, azure
     --gitops: string = "flux"
     --gcp-project: string = "playground-447016"
 ] {

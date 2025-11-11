@@ -73,6 +73,12 @@ cargo binstall cargo-readme --no-confirm
 cargo binstall cargo-tarpaulin --no-confirm
 cargo binstall cargo-outdated --no-confirm
 cargo binstall cargo-sort --no-confirm
+cargo binstall checker --no-confirm
+cargo binstall cargo-edit --no-confirm
+cargo binstall cargo-modules --no-confirm
+cargo binstall cargo-release --no-confirm
+cargo binstall cargo-bloat --no-confirm
+cargo install --git https://github.com/nushell/nufmt
 
 npm install -g @google/gemini-cli
 npm install -g @anthropic-ai/claude-code

@@ -16,6 +16,10 @@ build:
 nuds:
     nu ~/configs-files/scripts/flux-deps.nu
     #nu config.nu app list
+zellij:
+    zellij action dump-layout > ~/.config/zellij/playground.kdl
+    zellij --layout ~/.config/zellij/playground.kdl
+
 cluster:
     nu ~/configs-files/scripts/local/mod.nu -n shit
     nu ~/configs-files/scripts/generate-shell-configs.nu

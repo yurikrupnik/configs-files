@@ -96,12 +96,15 @@ disabled = true
 disabled = false
 
 [rust]
+format = '[$symbol($version) ]($style)'
 disabled = false
 
 [nodejs]
+format = '[$symbol($version) ]($style)'
 disabled = false
 
 [bun]
+format = '[$symbol($version) ]($style)'
 disabled = false
 
 [golang]
